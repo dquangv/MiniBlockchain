@@ -7,17 +7,20 @@ import (
 )
 
 type Block struct {
-	Transactions     []Transaction
+	Transactions     []*Transaction
 	MerkleRoot       string
 	PrevBlockHash    string
 	CurrentBlockHash string
 }
 
 // Tạo Merkle Root từ danh sách giao dịch
-func calculateMerkleRoot(txs []Transaction) string {
+func calculateMerkleRoot(txs []*Transaction) string {
 	var txHashes [][]byte
 	for _, tx := range txs {
-		hash := tx.Hash()
+		hash, err := tx.Hash()
+		if err != nil {
+			panic(err)
+		}
 		txHashes = append(txHashes, hash)
 	}
 	return hex.EncodeToString(buildMerkleRoot(txHashes))
@@ -57,7 +60,7 @@ func hashBlock(b *Block) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func NewBlock(txs []Transaction, prevHash string) *Block {
+func NewBlock(txs []*Transaction, prevHash string) *Block {
 	block := &Block{
 		Transactions:  txs,
 		PrevBlockHash: prevHash,
