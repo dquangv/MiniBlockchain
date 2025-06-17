@@ -6,7 +6,9 @@ import (
 	"log"
 	"net"
 
+	"golang-chain/pkg/blockchain"
 	"golang-chain/pkg/p2p/pb"
+	"golang-chain/pkg/storage"
 
 	"google.golang.org/grpc"
 )
@@ -57,13 +59,42 @@ func (s *NodeServer) ProposeBlock(ctx context.Context, req *pb.VoteRequest) (*pb
 	return vote, nil
 }
 
-func (s *NodeServer) CommitBlock(ctx context.Context, block *pb.Block) (*pb.TxResponse, error) {
-	log.Printf("[Follower] Committing block: %s", block.CurrentBlockHash)
+func convertPbBlock(pbBlock *pb.Block) *blockchain.Block {
+	var txs []*blockchain.Transaction
+	for _, tx := range pbBlock.Transactions {
+		txs = append(txs, &blockchain.Transaction{
+			Sender:    tx.Sender,
+			Receiver:  tx.Receiver,
+			Amount:    tx.Amount,
+			Timestamp: tx.Timestamp,
+			Signature: tx.Signature,
+		})
+	}
 
-	// TODO: Convert pb.Block → blockchain.Block → Save vào LevelDB
+	return &blockchain.Block{
+		Transactions:     txs,
+		MerkleRoot:       pbBlock.MerkleRoot,
+		PrevBlockHash:    pbBlock.PrevBlockHash,
+		CurrentBlockHash: pbBlock.CurrentBlockHash,
+	}
+}
 
+func (s *NodeServer) CommitBlock(ctx context.Context, pbBlock *pb.Block) (*pb.TxResponse, error) {
+	block := convertPbBlock(pbBlock)
+	db, err := storage.NewDB("blockdata")
+	if err != nil {
+		return nil, err
+	}
+	defer db.Close()
+
+	err = db.SaveBlock(block)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("[Follower] Block committed: %s", block.CurrentBlockHash)
 	return &pb.TxResponse{
 		Status:  "success",
-		Message: "block committed",
+		Message: "block saved",
 	}, nil
 }
