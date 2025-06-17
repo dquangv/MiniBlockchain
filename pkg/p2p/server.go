@@ -98,3 +98,51 @@ func (s *NodeServer) CommitBlock(ctx context.Context, pbBlock *pb.Block) (*pb.Tx
 		Message: "block saved",
 	}, nil
 }
+
+func (s *NodeServer) GetLatestBlock(ctx context.Context, _ *pb.Empty) (*pb.BlockResponse, error) {
+	db, _ := storage.NewDB("blockdata")
+	defer db.Close()
+
+	latestBlock, err := db.GetLatestBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.BlockResponse{Block: convertBlockToPb(latestBlock)}, nil
+}
+
+func (s *NodeServer) GetBlock(ctx context.Context, req *pb.BlockRequest) (*pb.BlockResponse, error) {
+	db, err := storage.NewDB("node1_db") // ❗ hardcoded path tạm thời
+	if err != nil {
+		log.Println("GetBlock: failed to open DB:", err)
+		return nil, err
+	}
+	defer db.Close()
+
+	blk, err := db.GetBlock(req.Hash)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.BlockResponse{Block: convertBlockToPb(blk)}, nil
+}
+
+func convertBlockToPb(block *blockchain.Block) *pb.Block {
+	var txs []*pb.Transaction
+	for _, tx := range block.Transactions {
+		txs = append(txs, &pb.Transaction{
+			Sender:    tx.Sender,
+			Receiver:  tx.Receiver,
+			Amount:    tx.Amount,
+			Timestamp: tx.Timestamp,
+			Signature: tx.Signature,
+		})
+	}
+
+	return &pb.Block{
+		Transactions:     txs,
+		MerkleRoot:       block.MerkleRoot,
+		PrevBlockHash:    block.PrevBlockHash,
+		CurrentBlockHash: block.CurrentBlockHash,
+	}
+}

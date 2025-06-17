@@ -35,9 +35,19 @@ message VoteResponse {
   bool approved = 2;
 }
 
+message BlockRequest {
+  string hash = 1;
+}
+
+message BlockResponse {
+  Block block = 1;
+}
+
 service NodeService {
   rpc SendTransaction(Transaction) returns (TxResponse);
   rpc Ping(Empty) returns (TxResponse);
   rpc ProposeBlock(VoteRequest) returns (VoteResponse);
   rpc CommitBlock(Block) returns (TxResponse);
+  rpc GetLatestBlock(Empty) returns (BlockResponse);
+  rpc GetBlock(BlockRequest) returns (BlockResponse);
 }

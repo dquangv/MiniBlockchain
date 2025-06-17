@@ -24,7 +24,14 @@ func (d *DB) SaveBlock(block *blockchain.Block) error {
 	if err != nil {
 		return err
 	}
-	return d.db.Put([]byte(block.CurrentBlockHash), data, nil)
+
+	err = d.db.Put([]byte(block.CurrentBlockHash), data, nil)
+	if err != nil {
+		return err
+	}
+
+	// 🆕 Ghi đè key "latest"
+	return d.db.Put([]byte("latest"), []byte(block.CurrentBlockHash), nil)
 }
 
 func (d *DB) GetBlock(hash string) (*blockchain.Block, error) {
@@ -41,4 +48,12 @@ func (d *DB) GetBlock(hash string) (*blockchain.Block, error) {
 
 func (d *DB) Close() {
 	d.db.Close()
+}
+
+func (db *DB) GetLatestBlock() (*blockchain.Block, error) {
+	hashBytes, err := db.db.Get([]byte("latest"), nil)
+	if err != nil {
+		return nil, err
+	}
+	return db.GetBlock(string(hashBytes))
 }
