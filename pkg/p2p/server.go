@@ -44,3 +44,26 @@ func StartGRPCServer(port string) {
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
+
+func (s *NodeServer) ProposeBlock(ctx context.Context, req *pb.VoteRequest) (*pb.VoteResponse, error) {
+	block := req.Block
+	log.Printf("[Follower] Received proposed block: %s", block.CurrentBlockHash)
+
+	// Giả sử block hợp lệ (chưa verify kỹ, sẽ bổ sung sau)
+	vote := &pb.VoteResponse{
+		NodeId:   "follower-1",
+		Approved: true,
+	}
+	return vote, nil
+}
+
+func (s *NodeServer) CommitBlock(ctx context.Context, block *pb.Block) (*pb.TxResponse, error) {
+	log.Printf("[Follower] Committing block: %s", block.CurrentBlockHash)
+
+	// TODO: Convert pb.Block → blockchain.Block → Save vào LevelDB
+
+	return &pb.TxResponse{
+		Status:  "success",
+		Message: "block committed",
+	}, nil
+}

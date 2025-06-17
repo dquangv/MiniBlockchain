@@ -185,6 +185,170 @@ func (*Empty) Descriptor() ([]byte, []int) {
 	return file_proto_node_proto_rawDescGZIP(), []int{2}
 }
 
+type Block struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Transactions     []*Transaction         `protobuf:"bytes,1,rep,name=transactions,proto3" json:"transactions,omitempty"`
+	MerkleRoot       string                 `protobuf:"bytes,2,opt,name=merkleRoot,proto3" json:"merkleRoot,omitempty"`
+	PrevBlockHash    string                 `protobuf:"bytes,3,opt,name=prevBlockHash,proto3" json:"prevBlockHash,omitempty"`
+	CurrentBlockHash string                 `protobuf:"bytes,4,opt,name=currentBlockHash,proto3" json:"currentBlockHash,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *Block) Reset() {
+	*x = Block{}
+	mi := &file_proto_node_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Block) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Block) ProtoMessage() {}
+
+func (x *Block) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_node_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Block.ProtoReflect.Descriptor instead.
+func (*Block) Descriptor() ([]byte, []int) {
+	return file_proto_node_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *Block) GetTransactions() []*Transaction {
+	if x != nil {
+		return x.Transactions
+	}
+	return nil
+}
+
+func (x *Block) GetMerkleRoot() string {
+	if x != nil {
+		return x.MerkleRoot
+	}
+	return ""
+}
+
+func (x *Block) GetPrevBlockHash() string {
+	if x != nil {
+		return x.PrevBlockHash
+	}
+	return ""
+}
+
+func (x *Block) GetCurrentBlockHash() string {
+	if x != nil {
+		return x.CurrentBlockHash
+	}
+	return ""
+}
+
+type VoteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Block         *Block                 `protobuf:"bytes,1,opt,name=block,proto3" json:"block,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VoteRequest) Reset() {
+	*x = VoteRequest{}
+	mi := &file_proto_node_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VoteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VoteRequest) ProtoMessage() {}
+
+func (x *VoteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_node_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VoteRequest.ProtoReflect.Descriptor instead.
+func (*VoteRequest) Descriptor() ([]byte, []int) {
+	return file_proto_node_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *VoteRequest) GetBlock() *Block {
+	if x != nil {
+		return x.Block
+	}
+	return nil
+}
+
+type VoteResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	NodeId        string                 `protobuf:"bytes,1,opt,name=nodeId,proto3" json:"nodeId,omitempty"`
+	Approved      bool                   `protobuf:"varint,2,opt,name=approved,proto3" json:"approved,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VoteResponse) Reset() {
+	*x = VoteResponse{}
+	mi := &file_proto_node_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VoteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VoteResponse) ProtoMessage() {}
+
+func (x *VoteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_node_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VoteResponse.ProtoReflect.Descriptor instead.
+func (*VoteResponse) Descriptor() ([]byte, []int) {
+	return file_proto_node_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *VoteResponse) GetNodeId() string {
+	if x != nil {
+		return x.NodeId
+	}
+	return ""
+}
+
+func (x *VoteResponse) GetApproved() bool {
+	if x != nil {
+		return x.Approved
+	}
+	return false
+}
+
 var File_proto_node_proto protoreflect.FileDescriptor
 
 const file_proto_node_proto_rawDesc = "" +
@@ -200,10 +364,24 @@ const file_proto_node_proto_rawDesc = "" +
 	"TxResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\a\n" +
-	"\x05Empty2d\n" +
+	"\x05Empty\"\xae\x01\n" +
+	"\x05Block\x123\n" +
+	"\ftransactions\x18\x01 \x03(\v2\x0f.pb.TransactionR\ftransactions\x12\x1e\n" +
+	"\n" +
+	"merkleRoot\x18\x02 \x01(\tR\n" +
+	"merkleRoot\x12$\n" +
+	"\rprevBlockHash\x18\x03 \x01(\tR\rprevBlockHash\x12*\n" +
+	"\x10currentBlockHash\x18\x04 \x01(\tR\x10currentBlockHash\".\n" +
+	"\vVoteRequest\x12\x1f\n" +
+	"\x05block\x18\x01 \x01(\v2\t.pb.BlockR\x05block\"B\n" +
+	"\fVoteResponse\x12\x16\n" +
+	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12\x1a\n" +
+	"\bapproved\x18\x02 \x01(\bR\bapproved2\xc1\x01\n" +
 	"\vNodeService\x122\n" +
 	"\x0fSendTransaction\x12\x0f.pb.Transaction\x1a\x0e.pb.TxResponse\x12!\n" +
-	"\x04Ping\x12\t.pb.Empty\x1a\x0e.pb.TxResponseB\fZ\n" +
+	"\x04Ping\x12\t.pb.Empty\x1a\x0e.pb.TxResponse\x121\n" +
+	"\fProposeBlock\x12\x0f.pb.VoteRequest\x1a\x10.pb.VoteResponse\x12(\n" +
+	"\vCommitBlock\x12\t.pb.Block\x1a\x0e.pb.TxResponseB\fZ\n" +
 	"pkg/p2p/pbb\x06proto3"
 
 var (
@@ -218,22 +396,31 @@ func file_proto_node_proto_rawDescGZIP() []byte {
 	return file_proto_node_proto_rawDescData
 }
 
-var file_proto_node_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_proto_node_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_proto_node_proto_goTypes = []any{
-	(*Transaction)(nil), // 0: pb.Transaction
-	(*TxResponse)(nil),  // 1: pb.TxResponse
-	(*Empty)(nil),       // 2: pb.Empty
+	(*Transaction)(nil),  // 0: pb.Transaction
+	(*TxResponse)(nil),   // 1: pb.TxResponse
+	(*Empty)(nil),        // 2: pb.Empty
+	(*Block)(nil),        // 3: pb.Block
+	(*VoteRequest)(nil),  // 4: pb.VoteRequest
+	(*VoteResponse)(nil), // 5: pb.VoteResponse
 }
 var file_proto_node_proto_depIdxs = []int32{
-	0, // 0: pb.NodeService.SendTransaction:input_type -> pb.Transaction
-	2, // 1: pb.NodeService.Ping:input_type -> pb.Empty
-	1, // 2: pb.NodeService.SendTransaction:output_type -> pb.TxResponse
-	1, // 3: pb.NodeService.Ping:output_type -> pb.TxResponse
-	2, // [2:4] is the sub-list for method output_type
-	0, // [0:2] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	0, // 0: pb.Block.transactions:type_name -> pb.Transaction
+	3, // 1: pb.VoteRequest.block:type_name -> pb.Block
+	0, // 2: pb.NodeService.SendTransaction:input_type -> pb.Transaction
+	2, // 3: pb.NodeService.Ping:input_type -> pb.Empty
+	4, // 4: pb.NodeService.ProposeBlock:input_type -> pb.VoteRequest
+	3, // 5: pb.NodeService.CommitBlock:input_type -> pb.Block
+	1, // 6: pb.NodeService.SendTransaction:output_type -> pb.TxResponse
+	1, // 7: pb.NodeService.Ping:output_type -> pb.TxResponse
+	5, // 8: pb.NodeService.ProposeBlock:output_type -> pb.VoteResponse
+	1, // 9: pb.NodeService.CommitBlock:output_type -> pb.TxResponse
+	6, // [6:10] is the sub-list for method output_type
+	2, // [2:6] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_proto_node_proto_init() }
@@ -247,7 +434,7 @@ func file_proto_node_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_node_proto_rawDesc), len(file_proto_node_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

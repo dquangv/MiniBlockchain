@@ -21,6 +21,8 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	NodeService_SendTransaction_FullMethodName = "/pb.NodeService/SendTransaction"
 	NodeService_Ping_FullMethodName            = "/pb.NodeService/Ping"
+	NodeService_ProposeBlock_FullMethodName    = "/pb.NodeService/ProposeBlock"
+	NodeService_CommitBlock_FullMethodName     = "/pb.NodeService/CommitBlock"
 )
 
 // NodeServiceClient is the client API for NodeService service.
@@ -29,6 +31,8 @@ const (
 type NodeServiceClient interface {
 	SendTransaction(ctx context.Context, in *Transaction, opts ...grpc.CallOption) (*TxResponse, error)
 	Ping(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*TxResponse, error)
+	ProposeBlock(ctx context.Context, in *VoteRequest, opts ...grpc.CallOption) (*VoteResponse, error)
+	CommitBlock(ctx context.Context, in *Block, opts ...grpc.CallOption) (*TxResponse, error)
 }
 
 type nodeServiceClient struct {
@@ -59,12 +63,34 @@ func (c *nodeServiceClient) Ping(ctx context.Context, in *Empty, opts ...grpc.Ca
 	return out, nil
 }
 
+func (c *nodeServiceClient) ProposeBlock(ctx context.Context, in *VoteRequest, opts ...grpc.CallOption) (*VoteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VoteResponse)
+	err := c.cc.Invoke(ctx, NodeService_ProposeBlock_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *nodeServiceClient) CommitBlock(ctx context.Context, in *Block, opts ...grpc.CallOption) (*TxResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TxResponse)
+	err := c.cc.Invoke(ctx, NodeService_CommitBlock_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NodeServiceServer is the server API for NodeService service.
 // All implementations must embed UnimplementedNodeServiceServer
 // for forward compatibility.
 type NodeServiceServer interface {
 	SendTransaction(context.Context, *Transaction) (*TxResponse, error)
 	Ping(context.Context, *Empty) (*TxResponse, error)
+	ProposeBlock(context.Context, *VoteRequest) (*VoteResponse, error)
+	CommitBlock(context.Context, *Block) (*TxResponse, error)
 	mustEmbedUnimplementedNodeServiceServer()
 }
 
@@ -80,6 +106,12 @@ func (UnimplementedNodeServiceServer) SendTransaction(context.Context, *Transact
 }
 func (UnimplementedNodeServiceServer) Ping(context.Context, *Empty) (*TxResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedNodeServiceServer) ProposeBlock(context.Context, *VoteRequest) (*VoteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ProposeBlock not implemented")
+}
+func (UnimplementedNodeServiceServer) CommitBlock(context.Context, *Block) (*TxResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CommitBlock not implemented")
 }
 func (UnimplementedNodeServiceServer) mustEmbedUnimplementedNodeServiceServer() {}
 func (UnimplementedNodeServiceServer) testEmbeddedByValue()                     {}
@@ -138,6 +170,42 @@ func _NodeService_Ping_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NodeService_ProposeBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VoteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServiceServer).ProposeBlock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NodeService_ProposeBlock_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServiceServer).ProposeBlock(ctx, req.(*VoteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _NodeService_CommitBlock_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Block)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServiceServer).CommitBlock(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NodeService_CommitBlock_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServiceServer).CommitBlock(ctx, req.(*Block))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // NodeService_ServiceDesc is the grpc.ServiceDesc for NodeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +220,14 @@ var NodeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _NodeService_Ping_Handler,
+		},
+		{
+			MethodName: "ProposeBlock",
+			Handler:    _NodeService_ProposeBlock_Handler,
+		},
+		{
+			MethodName: "CommitBlock",
+			Handler:    _NodeService_CommitBlock_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
