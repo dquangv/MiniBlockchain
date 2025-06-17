@@ -349,6 +349,94 @@ func (x *VoteResponse) GetApproved() bool {
 	return false
 }
 
+type BlockRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Hash          string                 `protobuf:"bytes,1,opt,name=hash,proto3" json:"hash,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockRequest) Reset() {
+	*x = BlockRequest{}
+	mi := &file_proto_node_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockRequest) ProtoMessage() {}
+
+func (x *BlockRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_node_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockRequest.ProtoReflect.Descriptor instead.
+func (*BlockRequest) Descriptor() ([]byte, []int) {
+	return file_proto_node_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *BlockRequest) GetHash() string {
+	if x != nil {
+		return x.Hash
+	}
+	return ""
+}
+
+type BlockResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Block         *Block                 `protobuf:"bytes,1,opt,name=block,proto3" json:"block,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BlockResponse) Reset() {
+	*x = BlockResponse{}
+	mi := &file_proto_node_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BlockResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BlockResponse) ProtoMessage() {}
+
+func (x *BlockResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_node_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BlockResponse.ProtoReflect.Descriptor instead.
+func (*BlockResponse) Descriptor() ([]byte, []int) {
+	return file_proto_node_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *BlockResponse) GetBlock() *Block {
+	if x != nil {
+		return x.Block
+	}
+	return nil
+}
+
 var File_proto_node_proto protoreflect.FileDescriptor
 
 const file_proto_node_proto_rawDesc = "" +
@@ -376,12 +464,18 @@ const file_proto_node_proto_rawDesc = "" +
 	"\x05block\x18\x01 \x01(\v2\t.pb.BlockR\x05block\"B\n" +
 	"\fVoteResponse\x12\x16\n" +
 	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12\x1a\n" +
-	"\bapproved\x18\x02 \x01(\bR\bapproved2\xc1\x01\n" +
+	"\bapproved\x18\x02 \x01(\bR\bapproved\"\"\n" +
+	"\fBlockRequest\x12\x12\n" +
+	"\x04hash\x18\x01 \x01(\tR\x04hash\"0\n" +
+	"\rBlockResponse\x12\x1f\n" +
+	"\x05block\x18\x01 \x01(\v2\t.pb.BlockR\x05block2\xa2\x02\n" +
 	"\vNodeService\x122\n" +
 	"\x0fSendTransaction\x12\x0f.pb.Transaction\x1a\x0e.pb.TxResponse\x12!\n" +
 	"\x04Ping\x12\t.pb.Empty\x1a\x0e.pb.TxResponse\x121\n" +
 	"\fProposeBlock\x12\x0f.pb.VoteRequest\x1a\x10.pb.VoteResponse\x12(\n" +
-	"\vCommitBlock\x12\t.pb.Block\x1a\x0e.pb.TxResponseB\fZ\n" +
+	"\vCommitBlock\x12\t.pb.Block\x1a\x0e.pb.TxResponse\x12.\n" +
+	"\x0eGetLatestBlock\x12\t.pb.Empty\x1a\x11.pb.BlockResponse\x12/\n" +
+	"\bGetBlock\x12\x10.pb.BlockRequest\x1a\x11.pb.BlockResponseB\fZ\n" +
 	"pkg/p2p/pbb\x06proto3"
 
 var (
@@ -396,31 +490,38 @@ func file_proto_node_proto_rawDescGZIP() []byte {
 	return file_proto_node_proto_rawDescData
 }
 
-var file_proto_node_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_proto_node_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_proto_node_proto_goTypes = []any{
-	(*Transaction)(nil),  // 0: pb.Transaction
-	(*TxResponse)(nil),   // 1: pb.TxResponse
-	(*Empty)(nil),        // 2: pb.Empty
-	(*Block)(nil),        // 3: pb.Block
-	(*VoteRequest)(nil),  // 4: pb.VoteRequest
-	(*VoteResponse)(nil), // 5: pb.VoteResponse
+	(*Transaction)(nil),   // 0: pb.Transaction
+	(*TxResponse)(nil),    // 1: pb.TxResponse
+	(*Empty)(nil),         // 2: pb.Empty
+	(*Block)(nil),         // 3: pb.Block
+	(*VoteRequest)(nil),   // 4: pb.VoteRequest
+	(*VoteResponse)(nil),  // 5: pb.VoteResponse
+	(*BlockRequest)(nil),  // 6: pb.BlockRequest
+	(*BlockResponse)(nil), // 7: pb.BlockResponse
 }
 var file_proto_node_proto_depIdxs = []int32{
 	0, // 0: pb.Block.transactions:type_name -> pb.Transaction
 	3, // 1: pb.VoteRequest.block:type_name -> pb.Block
-	0, // 2: pb.NodeService.SendTransaction:input_type -> pb.Transaction
-	2, // 3: pb.NodeService.Ping:input_type -> pb.Empty
-	4, // 4: pb.NodeService.ProposeBlock:input_type -> pb.VoteRequest
-	3, // 5: pb.NodeService.CommitBlock:input_type -> pb.Block
-	1, // 6: pb.NodeService.SendTransaction:output_type -> pb.TxResponse
-	1, // 7: pb.NodeService.Ping:output_type -> pb.TxResponse
-	5, // 8: pb.NodeService.ProposeBlock:output_type -> pb.VoteResponse
-	1, // 9: pb.NodeService.CommitBlock:output_type -> pb.TxResponse
-	6, // [6:10] is the sub-list for method output_type
-	2, // [2:6] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	3, // 2: pb.BlockResponse.block:type_name -> pb.Block
+	0, // 3: pb.NodeService.SendTransaction:input_type -> pb.Transaction
+	2, // 4: pb.NodeService.Ping:input_type -> pb.Empty
+	4, // 5: pb.NodeService.ProposeBlock:input_type -> pb.VoteRequest
+	3, // 6: pb.NodeService.CommitBlock:input_type -> pb.Block
+	2, // 7: pb.NodeService.GetLatestBlock:input_type -> pb.Empty
+	6, // 8: pb.NodeService.GetBlock:input_type -> pb.BlockRequest
+	1, // 9: pb.NodeService.SendTransaction:output_type -> pb.TxResponse
+	1, // 10: pb.NodeService.Ping:output_type -> pb.TxResponse
+	5, // 11: pb.NodeService.ProposeBlock:output_type -> pb.VoteResponse
+	1, // 12: pb.NodeService.CommitBlock:output_type -> pb.TxResponse
+	7, // 13: pb.NodeService.GetLatestBlock:output_type -> pb.BlockResponse
+	7, // 14: pb.NodeService.GetBlock:output_type -> pb.BlockResponse
+	9, // [9:15] is the sub-list for method output_type
+	3, // [3:9] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_proto_node_proto_init() }
@@ -434,7 +535,7 @@ func file_proto_node_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_node_proto_rawDesc), len(file_proto_node_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
