@@ -19,7 +19,25 @@ message TxResponse {
 
 message Empty {}
 
+message Block {
+  repeated Transaction transactions = 1;
+  string merkleRoot = 2;
+  string prevBlockHash = 3;
+  string currentBlockHash = 4;
+}
+
+message VoteRequest {
+  Block block = 1;
+}
+
+message VoteResponse {
+  string nodeId = 1;
+  bool approved = 2;
+}
+
 service NodeService {
-  rpc SendTransaction (Transaction) returns (TxResponse);
-  rpc Ping (Empty) returns (TxResponse); // test thôi
+  rpc SendTransaction(Transaction) returns (TxResponse);
+  rpc Ping(Empty) returns (TxResponse);
+  rpc ProposeBlock(VoteRequest) returns (VoteResponse);
+  rpc CommitBlock(Block) returns (TxResponse);
 }
