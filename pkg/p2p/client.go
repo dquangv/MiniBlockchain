@@ -3,6 +3,7 @@ package p2p
 import (
 	"context"
 	"golang-chain/pkg/p2p/pb"
+	"golang-chain/pkg/storage"
 	"log"
 
 	"google.golang.org/grpc"
@@ -50,4 +51,47 @@ func BroadcastCommit(peers []string, block *pb.Block) {
 			log.Println("Committed to", addr)
 		}
 	}
+}
+
+func SyncBlocksFromPeer(peer string, localLatestHash string) {
+	log.Println("🛠 SyncBlocksFromPeer CALLED: peer =", peer, ", localHash =", localLatestHash)
+	conn, err := grpc.Dial(peer, grpc.WithInsecure())
+	if err != nil {
+		log.Println("Connect error:", err)
+		return
+	}
+	defer conn.Close()
+
+	client := pb.NewNodeServiceClient(conn)
+
+	// Lấy block mới nhất từ peer
+	latestResp, err := client.GetLatestBlock(context.Background(), &pb.Empty{})
+	if err != nil {
+		log.Println("Failed to get latest block from peer:", err)
+		return
+	}
+
+	db, _ := storage.NewDB("blockdata")
+	defer db.Close()
+
+	remoteBlock := latestResp.Block
+	current := remoteBlock
+
+	for current != nil && current.CurrentBlockHash != localLatestHash {
+		blk := convertPbBlock(current)
+		err := db.SaveBlock(blk)
+		if err != nil {
+			log.Println("Failed to save block:", err)
+			return
+		}
+
+		// Lấy block trước
+		resp, err := client.GetBlock(context.Background(), &pb.BlockRequest{Hash: current.PrevBlockHash})
+		if err != nil {
+			break
+		}
+		current = resp.Block
+	}
+
+	log.Println("✅ Synced all missing blocks from peer!")
 }
