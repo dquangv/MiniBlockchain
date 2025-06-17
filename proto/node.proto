@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package pb;
+
+option go_package = "pkg/p2p/pb";
+
+message Transaction {
+  string sender = 1;
+  string receiver = 2;
+  double amount = 3;
+  int64 timestamp = 4;
+  bytes signature = 5;
+}
+
+message TxResponse {
+  string status = 1;
+  string message = 2;
+}
+
+message Empty {}
+
+service NodeService {
+  rpc SendTransaction (Transaction) returns (TxResponse);
+  rpc Ping (Empty) returns (TxResponse); // test thôi
+}
