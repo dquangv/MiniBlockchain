@@ -5,8 +5,8 @@ package pb;
 option go_package = "pkg/p2p/pb";
 
 message Transaction {
-  string sender = 1;
-  string receiver = 2;
+  bytes sender = 1;
+  bytes receiver = 2;
   double amount = 3;
   int64 timestamp = 4;
   bytes signature = 5;
