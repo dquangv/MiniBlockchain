@@ -14,7 +14,7 @@ type Block struct {
 }
 
 // Tạo Merkle Root từ danh sách giao dịch
-func calculateMerkleRoot(txs []*Transaction) string {
+func CalculateMerkleRoot(txs []*Transaction) string {
 	var txHashes [][]byte
 	for _, tx := range txs {
 		hash, err := tx.Hash()
@@ -52,7 +52,7 @@ func buildMerkleRoot(leaves [][]byte) []byte {
 	return buildMerkleRoot(newLevel)
 }
 
-func hashBlock(b *Block) string {
+func HashBlock(b *Block) string {
 	copyBlock := *b
 	copyBlock.CurrentBlockHash = "" // bỏ self-hash trước khi hash
 	data, _ := json.Marshal(copyBlock)
@@ -65,7 +65,7 @@ func NewBlock(txs []*Transaction, prevHash string) *Block {
 		Transactions:  txs,
 		PrevBlockHash: prevHash,
 	}
-	block.MerkleRoot = calculateMerkleRoot(txs)
-	block.CurrentBlockHash = hashBlock(block)
+	block.MerkleRoot = CalculateMerkleRoot(txs)
+	block.CurrentBlockHash = HashBlock(block)
 	return block
 }
