@@ -10,11 +10,16 @@ import (
 	"golang-chain/pkg/p2p/pb"
 	"golang-chain/pkg/storage"
 
+	"golang-chain/pkg/consensus"
+
 	"google.golang.org/grpc"
 )
 
 type NodeServer struct {
 	pb.UnimplementedNodeServiceServer
+	DBPath string
+	NodeID string
+	DB     *storage.DB
 }
 
 func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*pb.TxResponse, error) {
@@ -32,14 +37,20 @@ func (s *NodeServer) Ping(ctx context.Context, e *pb.Empty) (*pb.TxResponse, err
 	}, nil
 }
 
-func StartGRPCServer(port string) {
+func StartGRPCServer(port, dbPath, nodeID string, db *storage.DB) {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatal("failed to listen:", err)
+	}
+
+	server := &NodeServer{
+		DBPath: dbPath,
+		NodeID: nodeID,
+		DB:     db, // 🆕 xài lại db đã mở
 	}
 
 	grpcServer := grpc.NewServer()
-	pb.RegisterNodeServiceServer(grpcServer, &NodeServer{})
+	pb.RegisterNodeServiceServer(grpcServer, server)
 
 	fmt.Println("gRPC server listening on port", port)
 	if err := grpcServer.Serve(lis); err != nil {
@@ -47,15 +58,25 @@ func StartGRPCServer(port string) {
 	}
 }
 
+// Follower xử lý block do Leader đề xuất để vote
 func (s *NodeServer) ProposeBlock(ctx context.Context, req *pb.VoteRequest) (*pb.VoteResponse, error) {
 	block := req.Block
 	log.Printf("[Follower] Received proposed block: %s", block.CurrentBlockHash)
 
-	// Giả sử block hợp lệ (chưa verify kỹ, sẽ bổ sung sau)
-	vote := &pb.VoteResponse{
-		NodeId:   "follower-1",
-		Approved: true,
+	latestBlock, err := s.DB.GetLatestBlock()
+	if err != nil {
+		log.Println("No latest block:", err)
+		latestBlock = nil
 	}
+
+	newBlock := convertPbBlock(block)
+	isValid := consensus.VerifyBlock(newBlock, latestBlock)
+
+	vote := &pb.VoteResponse{
+		NodeId:   s.NodeID,
+		Approved: isValid,
+	}
+
 	return vote, nil
 }
 
@@ -63,31 +84,29 @@ func convertPbBlock(pbBlock *pb.Block) *blockchain.Block {
 	var txs []*blockchain.Transaction
 	for _, tx := range pbBlock.Transactions {
 		txs = append(txs, &blockchain.Transaction{
-			Sender:    tx.Sender,
-			Receiver:  tx.Receiver,
+			Sender:    append([]byte(nil), tx.Sender...),
+			Receiver:  append([]byte(nil), tx.Receiver...),
 			Amount:    tx.Amount,
 			Timestamp: tx.Timestamp,
-			Signature: tx.Signature,
+			Signature: append([]byte(nil), tx.Signature...),
 		})
 	}
 
-	return &blockchain.Block{
+	block := &blockchain.Block{
 		Transactions:     txs,
-		MerkleRoot:       pbBlock.MerkleRoot,
 		PrevBlockHash:    pbBlock.PrevBlockHash,
 		CurrentBlockHash: pbBlock.CurrentBlockHash,
 	}
+
+	block.MerkleRoot = blockchain.CalculateMerkleRoot(txs)
+
+	return block
 }
 
 func (s *NodeServer) CommitBlock(ctx context.Context, pbBlock *pb.Block) (*pb.TxResponse, error) {
 	block := convertPbBlock(pbBlock)
-	db, err := storage.NewDB("blockdata")
-	if err != nil {
-		return nil, err
-	}
-	defer db.Close()
 
-	err = db.SaveBlock(block)
+	err := s.DB.SaveBlock(block)
 	if err != nil {
 		return nil, err
 	}
@@ -100,34 +119,24 @@ func (s *NodeServer) CommitBlock(ctx context.Context, pbBlock *pb.Block) (*pb.Tx
 }
 
 func (s *NodeServer) GetLatestBlock(ctx context.Context, _ *pb.Empty) (*pb.BlockResponse, error) {
-	db, _ := storage.NewDB("blockdata")
-	defer db.Close()
-
-	latestBlock, err := db.GetLatestBlock()
+	latestBlock, err := s.DB.GetLatestBlock()
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.BlockResponse{Block: convertBlockToPb(latestBlock)}, nil
+	return &pb.BlockResponse{Block: ConvertBlockToPb(latestBlock)}, nil
 }
 
 func (s *NodeServer) GetBlock(ctx context.Context, req *pb.BlockRequest) (*pb.BlockResponse, error) {
-	db, err := storage.NewDB("node1_db") // ❗ hardcoded path tạm thời
-	if err != nil {
-		log.Println("GetBlock: failed to open DB:", err)
-		return nil, err
-	}
-	defer db.Close()
-
-	blk, err := db.GetBlock(req.Hash)
+	blk, err := s.DB.GetBlock([]byte(req.Hash))
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.BlockResponse{Block: convertBlockToPb(blk)}, nil
+	return &pb.BlockResponse{Block: ConvertBlockToPb(blk)}, nil
 }
 
-func convertBlockToPb(block *blockchain.Block) *pb.Block {
+func ConvertBlockToPb(block *blockchain.Block) *pb.Block {
 	var txs []*pb.Transaction
 	for _, tx := range block.Transactions {
 		txs = append(txs, &pb.Transaction{
