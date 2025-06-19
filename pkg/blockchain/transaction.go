@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -29,9 +30,14 @@ func NewTransaction(sender, receiver []byte, amount float64) *Transaction {
 
 // Hash nội dung giao dịch (không gồm chữ ký)
 func (t *Transaction) Hash() ([]byte, error) {
-	txCopy := *t
-	txCopy.Signature = nil
-	jsonData, err := json.Marshal(txCopy)
+	txMap := map[string]interface{}{
+		"sender":    hex.EncodeToString(t.Sender),
+		"receiver":  hex.EncodeToString(t.Receiver),
+		"amount":    t.Amount,
+		"timestamp": t.Timestamp,
+	}
+
+	jsonData, err := json.Marshal(txMap)
 	if err != nil {
 		return nil, err
 	}
