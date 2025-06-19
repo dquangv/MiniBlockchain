@@ -7,13 +7,14 @@ import (
 	"log"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func SendBlockForVote(peers []string, block *pb.Block) []*pb.VoteResponse {
 	var votes []*pb.VoteResponse
 
 	for _, addr := range peers {
-		conn, err := grpc.Dial(addr, grpc.WithInsecure())
+		conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			log.Println("Can't connect to peer", addr)
 			continue
@@ -53,9 +54,10 @@ func BroadcastCommit(peers []string, block *pb.Block) {
 	}
 }
 
-func SyncBlocksFromPeer(peer string, localLatestHash string) {
+func SyncBlocksFromPeer(peer string, localLatestHash string, db *storage.DB) {
 	log.Println("🛠 SyncBlocksFromPeer CALLED: peer =", peer, ", localHash =", localLatestHash)
-	conn, err := grpc.Dial(peer, grpc.WithInsecure())
+
+	conn, err := grpc.Dial(peer, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Println("Connect error:", err)
 		return
@@ -71,23 +73,19 @@ func SyncBlocksFromPeer(peer string, localLatestHash string) {
 		return
 	}
 
-	db, _ := storage.NewDB("blockdata")
-	defer db.Close()
-
 	remoteBlock := latestResp.Block
 	current := remoteBlock
 
 	for current != nil && current.CurrentBlockHash != localLatestHash {
 		blk := convertPbBlock(current)
-		err := db.SaveBlock(blk)
-		if err != nil {
+		if err := db.SaveBlock(blk); err != nil {
 			log.Println("Failed to save block:", err)
 			return
 		}
 
-		// Lấy block trước
 		resp, err := client.GetBlock(context.Background(), &pb.BlockRequest{Hash: current.PrevBlockHash})
 		if err != nil {
+			log.Println("Failed to get previous block:", err)
 			break
 		}
 		current = resp.Block
