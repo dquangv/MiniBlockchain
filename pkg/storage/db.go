@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"golang-chain/pkg/blockchain"
+	"log"
 
 	"github.com/syndtr/goleveldb/leveldb"
 )
@@ -30,12 +31,14 @@ func (d *DB) SaveBlock(block *blockchain.Block) error {
 		return err
 	}
 
+	log.Printf("[Follower] Block synced and committed: %s", block.CurrentBlockHash)
+
 	// 🆕 Ghi đè key "latest"
 	return d.db.Put([]byte("latest"), []byte(block.CurrentBlockHash), nil)
 }
 
-func (d *DB) GetBlock(hash string) (*blockchain.Block, error) {
-	data, err := d.db.Get([]byte(hash), nil)
+func (d *DB) GetBlock(hash []byte) (*blockchain.Block, error) {
+	data, err := d.db.Get(hash, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -55,5 +58,5 @@ func (db *DB) GetLatestBlock() (*blockchain.Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	return db.GetBlock(string(hashBytes))
+	return db.GetBlock(hashBytes)
 }

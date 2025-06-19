@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"math/big"
@@ -11,14 +12,14 @@ import (
 )
 
 type Transaction struct {
-	Sender    string // address
-	Receiver  string // address
+	Sender    []byte
+	Receiver  []byte
 	Amount    float64
 	Timestamp int64
 	Signature []byte
 }
 
-func NewTransaction(sender, receiver string, amount float64) *Transaction {
+func NewTransaction(sender, receiver []byte, amount float64) *Transaction {
 	return &Transaction{
 		Sender:    sender,
 		Receiver:  receiver,
@@ -29,9 +30,14 @@ func NewTransaction(sender, receiver string, amount float64) *Transaction {
 
 // Hash nội dung giao dịch (không gồm chữ ký)
 func (t *Transaction) Hash() ([]byte, error) {
-	txCopy := *t
-	txCopy.Signature = nil
-	jsonData, err := json.Marshal(txCopy)
+	txMap := map[string]interface{}{
+		"sender":    hex.EncodeToString(t.Sender),
+		"receiver":  hex.EncodeToString(t.Receiver),
+		"amount":    t.Amount,
+		"timestamp": t.Timestamp,
+	}
+
+	jsonData, err := json.Marshal(txMap)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +56,9 @@ func (t *Transaction) Sign(priv *ecdsa.PrivateKey) error {
 		return err
 	}
 
-	signature := append(r.Bytes(), s.Bytes()...)
-	t.Signature = signature
+	rBytes := r.FillBytes(make([]byte, 32)) // chuẩn hóa thành 32 byte
+	sBytes := s.FillBytes(make([]byte, 32))
+	t.Signature = append(rBytes, sBytes...)
 	return nil
 }
 

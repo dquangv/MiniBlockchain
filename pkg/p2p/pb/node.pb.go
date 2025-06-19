@@ -23,8 +23,8 @@ const (
 
 type Transaction struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Sender        string                 `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
-	Receiver      string                 `protobuf:"bytes,2,opt,name=receiver,proto3" json:"receiver,omitempty"`
+	Sender        []byte                 `protobuf:"bytes,1,opt,name=sender,proto3" json:"sender,omitempty"`
+	Receiver      []byte                 `protobuf:"bytes,2,opt,name=receiver,proto3" json:"receiver,omitempty"`
 	Amount        float64                `protobuf:"fixed64,3,opt,name=amount,proto3" json:"amount,omitempty"`
 	Timestamp     int64                  `protobuf:"varint,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Signature     []byte                 `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature,omitempty"`
@@ -62,18 +62,18 @@ func (*Transaction) Descriptor() ([]byte, []int) {
 	return file_proto_node_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Transaction) GetSender() string {
+func (x *Transaction) GetSender() []byte {
 	if x != nil {
 		return x.Sender
 	}
-	return ""
+	return nil
 }
 
-func (x *Transaction) GetReceiver() string {
+func (x *Transaction) GetReceiver() []byte {
 	if x != nil {
 		return x.Receiver
 	}
-	return ""
+	return nil
 }
 
 func (x *Transaction) GetAmount() float64 {
@@ -443,8 +443,8 @@ const file_proto_node_proto_rawDesc = "" +
 	"\n" +
 	"\x10proto/node.proto\x12\x02pb\"\x95\x01\n" +
 	"\vTransaction\x12\x16\n" +
-	"\x06sender\x18\x01 \x01(\tR\x06sender\x12\x1a\n" +
-	"\breceiver\x18\x02 \x01(\tR\breceiver\x12\x16\n" +
+	"\x06sender\x18\x01 \x01(\fR\x06sender\x12\x1a\n" +
+	"\breceiver\x18\x02 \x01(\fR\breceiver\x12\x16\n" +
 	"\x06amount\x18\x03 \x01(\x01R\x06amount\x12\x1c\n" +
 	"\ttimestamp\x18\x04 \x01(\x03R\ttimestamp\x12\x1c\n" +
 	"\tsignature\x18\x05 \x01(\fR\tsignature\">\n" +
