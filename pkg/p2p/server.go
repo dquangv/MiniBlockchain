@@ -24,6 +24,13 @@ type NodeServer struct {
 }
 
 func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*pb.TxResponse, error) {
+	if s.State != StateLeader {
+		return &pb.TxResponse{
+			Status:  "error",
+			Message: "Only the leader can accept transactions",
+		}, nil
+	}
+
 	log.Printf("Received transaction from %s to %s (%.2f)", tx.Sender, tx.Receiver, tx.Amount)
 
 	// Convert pb.Transaction → blockchain.Transaction
@@ -50,7 +57,7 @@ func (s *NodeServer) Ping(ctx context.Context, e *pb.Empty) (*pb.TxResponse, err
 	}, nil
 }
 
-func StartGRPCServer(port, dbPath, nodeID string, db *storage.DB) {
+func StartGRPCServer(port, dbPath, nodeID string, db *storage.DB, state NodeState) {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatal("failed to listen:", err)
@@ -60,6 +67,7 @@ func StartGRPCServer(port, dbPath, nodeID string, db *storage.DB) {
 		DBPath: dbPath,
 		NodeID: nodeID,
 		DB:     db, // 🆕 xài lại db đã mở
+		State:  state,
 	}
 
 	grpcServer := grpc.NewServer()
@@ -109,6 +117,7 @@ func convertPbBlock(pbBlock *pb.Block) *blockchain.Block {
 		Transactions:     txs,
 		PrevBlockHash:    pbBlock.PrevBlockHash,
 		CurrentBlockHash: pbBlock.CurrentBlockHash,
+		Height:           pbBlock.Height,
 	}
 
 	block.MerkleRoot = blockchain.CalculateMerkleRoot(txs)
@@ -166,5 +175,15 @@ func ConvertBlockToPb(block *blockchain.Block) *pb.Block {
 		MerkleRoot:       block.MerkleRoot,
 		PrevBlockHash:    block.PrevBlockHash,
 		CurrentBlockHash: block.CurrentBlockHash,
+		Height:           block.Height,
 	}
+}
+
+func (s *NodeServer) GetBlockByHeight(ctx context.Context, req *pb.HeightRequest) (*pb.BlockResponse, error) {
+	block, err := s.DB.GetBlockByHeight(req.Height)
+	if err != nil {
+		log.Println("❌ GetBlockByHeight error:", err)
+		return nil, err
+	}
+	return &pb.BlockResponse{Block: ConvertBlockToPb(block)}, nil
 }
