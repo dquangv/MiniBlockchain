@@ -30,25 +30,20 @@ func main() {
 	}
 	defer db.Close()
 
-	// Kiểm tra có block mới nhất không
-	var localHash string
-	latest, err := db.GetLatestBlock()
-	if err != nil {
-		fmt.Println("⚠️  No latest block found:", err)
-	} else if latest != nil {
-		localHash = latest.CurrentBlockHash
-	}
-
 	// Nếu là Leader → start loop tạo block định kỳ
+	// Xác định nodeState từ tham số truyền vào
+	var nodeState p2p.NodeState
 	if peer == "none" {
+		nodeState = p2p.StateLeader
 		log.Println("🧠 This node is the Leader.")
-		peers := []string{"localhost:50052", "localhost:50053"} // hoặc load từ config sau này
+		peers := []string{"localhost:50052", "localhost:50053"}
 		go p2p.StartLeaderLoop(db, peers)
 	} else {
+		nodeState = p2p.StateFollower
 		fmt.Println("🟡 Syncing block from peer:", peer)
-		p2p.SyncBlocksFromPeer(peer, localHash, db)
+		p2p.SyncFromPeerByHeight(peer, db)
 	}
 
 	// Khởi chạy gRPC server
-	p2p.StartGRPCServer(port, dbPath, nodeID, db)
+	p2p.StartGRPCServer(port, dbPath, nodeID, db, nodeState)
 }
