@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"golang-chain/pkg/blockchain"
 	"golang-chain/pkg/p2p/pb"
@@ -13,6 +14,7 @@ import (
 	"golang-chain/pkg/consensus"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type NodeServer struct {
@@ -53,7 +55,7 @@ func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*
 func (s *NodeServer) Ping(ctx context.Context, e *pb.Empty) (*pb.TxResponse, error) {
 	return &pb.TxResponse{
 		Status:  "pong",
-		Message: "I'm alive",
+		Message: string(s.State),
 	}, nil
 }
 
@@ -81,6 +83,14 @@ func StartGRPCServer(port, dbPath, nodeID string, db *storage.DB, state NodeStat
 
 // Follower xử lý block do Leader đề xuất để vote
 func (s *NodeServer) ProposeBlock(ctx context.Context, req *pb.VoteRequest) (*pb.VoteResponse, error) {
+	if s.State != StateFollower {
+		log.Println("⚠️ Vote rejected: I am not a follower.")
+		return &pb.VoteResponse{
+			NodeId:   s.NodeID,
+			Approved: false,
+		}, nil
+	}
+
 	block := req.Block
 	log.Printf("[Follower] Received proposed block: %s", block.CurrentBlockHash)
 
@@ -182,8 +192,31 @@ func ConvertBlockToPb(block *blockchain.Block) *pb.Block {
 func (s *NodeServer) GetBlockByHeight(ctx context.Context, req *pb.HeightRequest) (*pb.BlockResponse, error) {
 	block, err := s.DB.GetBlockByHeight(req.Height)
 	if err != nil {
-		log.Println("❌ GetBlockByHeight error:", err)
 		return nil, err
 	}
 	return &pb.BlockResponse{Block: ConvertBlockToPb(block)}, nil
+}
+
+func DetectLeader(peers []string) string {
+	for _, peer := range peers {
+		conn, err := grpc.Dial(peer, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock(), grpc.WithTimeout(2*time.Second))
+		if err != nil {
+			log.Println("❌ Failed to connect to", peer)
+			continue
+		}
+		defer conn.Close()
+
+		client := pb.NewNodeServiceClient(conn)
+		resp, err := client.Ping(context.Background(), &pb.Empty{})
+		if err != nil {
+			log.Println("❌ Ping failed to", peer)
+			continue
+		}
+
+		if resp.Message == string(StateLeader) {
+			log.Println("👑 Leader detected at", peer)
+			return peer
+		}
+	}
+	return ""
 }
