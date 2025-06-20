@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	NodeService_SendTransaction_FullMethodName = "/pb.NodeService/SendTransaction"
-	NodeService_Ping_FullMethodName            = "/pb.NodeService/Ping"
-	NodeService_ProposeBlock_FullMethodName    = "/pb.NodeService/ProposeBlock"
-	NodeService_CommitBlock_FullMethodName     = "/pb.NodeService/CommitBlock"
-	NodeService_GetLatestBlock_FullMethodName  = "/pb.NodeService/GetLatestBlock"
-	NodeService_GetBlock_FullMethodName        = "/pb.NodeService/GetBlock"
+	NodeService_SendTransaction_FullMethodName  = "/pb.NodeService/SendTransaction"
+	NodeService_Ping_FullMethodName             = "/pb.NodeService/Ping"
+	NodeService_ProposeBlock_FullMethodName     = "/pb.NodeService/ProposeBlock"
+	NodeService_CommitBlock_FullMethodName      = "/pb.NodeService/CommitBlock"
+	NodeService_GetLatestBlock_FullMethodName   = "/pb.NodeService/GetLatestBlock"
+	NodeService_GetBlock_FullMethodName         = "/pb.NodeService/GetBlock"
+	NodeService_GetBlockByHeight_FullMethodName = "/pb.NodeService/GetBlockByHeight"
 )
 
 // NodeServiceClient is the client API for NodeService service.
@@ -37,6 +38,7 @@ type NodeServiceClient interface {
 	CommitBlock(ctx context.Context, in *Block, opts ...grpc.CallOption) (*TxResponse, error)
 	GetLatestBlock(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*BlockResponse, error)
 	GetBlock(ctx context.Context, in *BlockRequest, opts ...grpc.CallOption) (*BlockResponse, error)
+	GetBlockByHeight(ctx context.Context, in *HeightRequest, opts ...grpc.CallOption) (*BlockResponse, error)
 }
 
 type nodeServiceClient struct {
@@ -107,6 +109,16 @@ func (c *nodeServiceClient) GetBlock(ctx context.Context, in *BlockRequest, opts
 	return out, nil
 }
 
+func (c *nodeServiceClient) GetBlockByHeight(ctx context.Context, in *HeightRequest, opts ...grpc.CallOption) (*BlockResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BlockResponse)
+	err := c.cc.Invoke(ctx, NodeService_GetBlockByHeight_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NodeServiceServer is the server API for NodeService service.
 // All implementations must embed UnimplementedNodeServiceServer
 // for forward compatibility.
@@ -117,6 +129,7 @@ type NodeServiceServer interface {
 	CommitBlock(context.Context, *Block) (*TxResponse, error)
 	GetLatestBlock(context.Context, *Empty) (*BlockResponse, error)
 	GetBlock(context.Context, *BlockRequest) (*BlockResponse, error)
+	GetBlockByHeight(context.Context, *HeightRequest) (*BlockResponse, error)
 	mustEmbedUnimplementedNodeServiceServer()
 }
 
@@ -144,6 +157,9 @@ func (UnimplementedNodeServiceServer) GetLatestBlock(context.Context, *Empty) (*
 }
 func (UnimplementedNodeServiceServer) GetBlock(context.Context, *BlockRequest) (*BlockResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBlock not implemented")
+}
+func (UnimplementedNodeServiceServer) GetBlockByHeight(context.Context, *HeightRequest) (*BlockResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlockByHeight not implemented")
 }
 func (UnimplementedNodeServiceServer) mustEmbedUnimplementedNodeServiceServer() {}
 func (UnimplementedNodeServiceServer) testEmbeddedByValue()                     {}
@@ -274,6 +290,24 @@ func _NodeService_GetBlock_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NodeService_GetBlockByHeight_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HeightRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServiceServer).GetBlockByHeight(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NodeService_GetBlockByHeight_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServiceServer).GetBlockByHeight(ctx, req.(*HeightRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // NodeService_ServiceDesc is the grpc.ServiceDesc for NodeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -304,6 +338,10 @@ var NodeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBlock",
 			Handler:    _NodeService_GetBlock_Handler,
+		},
+		{
+			MethodName: "GetBlockByHeight",
+			Handler:    _NodeService_GetBlockByHeight_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -191,6 +191,7 @@ type Block struct {
 	MerkleRoot       string                 `protobuf:"bytes,2,opt,name=merkleRoot,proto3" json:"merkleRoot,omitempty"`
 	PrevBlockHash    string                 `protobuf:"bytes,3,opt,name=prevBlockHash,proto3" json:"prevBlockHash,omitempty"`
 	CurrentBlockHash string                 `protobuf:"bytes,4,opt,name=currentBlockHash,proto3" json:"currentBlockHash,omitempty"`
+	Height           int64                  `protobuf:"varint,5,opt,name=height,proto3" json:"height,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -251,6 +252,13 @@ func (x *Block) GetCurrentBlockHash() string {
 		return x.CurrentBlockHash
 	}
 	return ""
+}
+
+func (x *Block) GetHeight() int64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
 }
 
 type VoteRequest struct {
@@ -437,6 +445,50 @@ func (x *BlockResponse) GetBlock() *Block {
 	return nil
 }
 
+type HeightRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Height        int64                  `protobuf:"varint,1,opt,name=height,proto3" json:"height,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HeightRequest) Reset() {
+	*x = HeightRequest{}
+	mi := &file_proto_node_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HeightRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HeightRequest) ProtoMessage() {}
+
+func (x *HeightRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_node_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HeightRequest.ProtoReflect.Descriptor instead.
+func (*HeightRequest) Descriptor() ([]byte, []int) {
+	return file_proto_node_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *HeightRequest) GetHeight() int64 {
+	if x != nil {
+		return x.Height
+	}
+	return 0
+}
+
 var File_proto_node_proto protoreflect.FileDescriptor
 
 const file_proto_node_proto_rawDesc = "" +
@@ -452,14 +504,15 @@ const file_proto_node_proto_rawDesc = "" +
 	"TxResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"\a\n" +
-	"\x05Empty\"\xae\x01\n" +
+	"\x05Empty\"\xc6\x01\n" +
 	"\x05Block\x123\n" +
 	"\ftransactions\x18\x01 \x03(\v2\x0f.pb.TransactionR\ftransactions\x12\x1e\n" +
 	"\n" +
 	"merkleRoot\x18\x02 \x01(\tR\n" +
 	"merkleRoot\x12$\n" +
 	"\rprevBlockHash\x18\x03 \x01(\tR\rprevBlockHash\x12*\n" +
-	"\x10currentBlockHash\x18\x04 \x01(\tR\x10currentBlockHash\".\n" +
+	"\x10currentBlockHash\x18\x04 \x01(\tR\x10currentBlockHash\x12\x16\n" +
+	"\x06height\x18\x05 \x01(\x03R\x06height\".\n" +
 	"\vVoteRequest\x12\x1f\n" +
 	"\x05block\x18\x01 \x01(\v2\t.pb.BlockR\x05block\"B\n" +
 	"\fVoteResponse\x12\x16\n" +
@@ -468,14 +521,17 @@ const file_proto_node_proto_rawDesc = "" +
 	"\fBlockRequest\x12\x12\n" +
 	"\x04hash\x18\x01 \x01(\tR\x04hash\"0\n" +
 	"\rBlockResponse\x12\x1f\n" +
-	"\x05block\x18\x01 \x01(\v2\t.pb.BlockR\x05block2\xa2\x02\n" +
+	"\x05block\x18\x01 \x01(\v2\t.pb.BlockR\x05block\"'\n" +
+	"\rHeightRequest\x12\x16\n" +
+	"\x06height\x18\x01 \x01(\x03R\x06height2\xdc\x02\n" +
 	"\vNodeService\x122\n" +
 	"\x0fSendTransaction\x12\x0f.pb.Transaction\x1a\x0e.pb.TxResponse\x12!\n" +
 	"\x04Ping\x12\t.pb.Empty\x1a\x0e.pb.TxResponse\x121\n" +
 	"\fProposeBlock\x12\x0f.pb.VoteRequest\x1a\x10.pb.VoteResponse\x12(\n" +
 	"\vCommitBlock\x12\t.pb.Block\x1a\x0e.pb.TxResponse\x12.\n" +
 	"\x0eGetLatestBlock\x12\t.pb.Empty\x1a\x11.pb.BlockResponse\x12/\n" +
-	"\bGetBlock\x12\x10.pb.BlockRequest\x1a\x11.pb.BlockResponseB\fZ\n" +
+	"\bGetBlock\x12\x10.pb.BlockRequest\x1a\x11.pb.BlockResponse\x128\n" +
+	"\x10GetBlockByHeight\x12\x11.pb.HeightRequest\x1a\x11.pb.BlockResponseB\fZ\n" +
 	"pkg/p2p/pbb\x06proto3"
 
 var (
@@ -490,7 +546,7 @@ func file_proto_node_proto_rawDescGZIP() []byte {
 	return file_proto_node_proto_rawDescData
 }
 
-var file_proto_node_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_proto_node_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_proto_node_proto_goTypes = []any{
 	(*Transaction)(nil),   // 0: pb.Transaction
 	(*TxResponse)(nil),    // 1: pb.TxResponse
@@ -500,28 +556,31 @@ var file_proto_node_proto_goTypes = []any{
 	(*VoteResponse)(nil),  // 5: pb.VoteResponse
 	(*BlockRequest)(nil),  // 6: pb.BlockRequest
 	(*BlockResponse)(nil), // 7: pb.BlockResponse
+	(*HeightRequest)(nil), // 8: pb.HeightRequest
 }
 var file_proto_node_proto_depIdxs = []int32{
-	0, // 0: pb.Block.transactions:type_name -> pb.Transaction
-	3, // 1: pb.VoteRequest.block:type_name -> pb.Block
-	3, // 2: pb.BlockResponse.block:type_name -> pb.Block
-	0, // 3: pb.NodeService.SendTransaction:input_type -> pb.Transaction
-	2, // 4: pb.NodeService.Ping:input_type -> pb.Empty
-	4, // 5: pb.NodeService.ProposeBlock:input_type -> pb.VoteRequest
-	3, // 6: pb.NodeService.CommitBlock:input_type -> pb.Block
-	2, // 7: pb.NodeService.GetLatestBlock:input_type -> pb.Empty
-	6, // 8: pb.NodeService.GetBlock:input_type -> pb.BlockRequest
-	1, // 9: pb.NodeService.SendTransaction:output_type -> pb.TxResponse
-	1, // 10: pb.NodeService.Ping:output_type -> pb.TxResponse
-	5, // 11: pb.NodeService.ProposeBlock:output_type -> pb.VoteResponse
-	1, // 12: pb.NodeService.CommitBlock:output_type -> pb.TxResponse
-	7, // 13: pb.NodeService.GetLatestBlock:output_type -> pb.BlockResponse
-	7, // 14: pb.NodeService.GetBlock:output_type -> pb.BlockResponse
-	9, // [9:15] is the sub-list for method output_type
-	3, // [3:9] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0,  // 0: pb.Block.transactions:type_name -> pb.Transaction
+	3,  // 1: pb.VoteRequest.block:type_name -> pb.Block
+	3,  // 2: pb.BlockResponse.block:type_name -> pb.Block
+	0,  // 3: pb.NodeService.SendTransaction:input_type -> pb.Transaction
+	2,  // 4: pb.NodeService.Ping:input_type -> pb.Empty
+	4,  // 5: pb.NodeService.ProposeBlock:input_type -> pb.VoteRequest
+	3,  // 6: pb.NodeService.CommitBlock:input_type -> pb.Block
+	2,  // 7: pb.NodeService.GetLatestBlock:input_type -> pb.Empty
+	6,  // 8: pb.NodeService.GetBlock:input_type -> pb.BlockRequest
+	8,  // 9: pb.NodeService.GetBlockByHeight:input_type -> pb.HeightRequest
+	1,  // 10: pb.NodeService.SendTransaction:output_type -> pb.TxResponse
+	1,  // 11: pb.NodeService.Ping:output_type -> pb.TxResponse
+	5,  // 12: pb.NodeService.ProposeBlock:output_type -> pb.VoteResponse
+	1,  // 13: pb.NodeService.CommitBlock:output_type -> pb.TxResponse
+	7,  // 14: pb.NodeService.GetLatestBlock:output_type -> pb.BlockResponse
+	7,  // 15: pb.NodeService.GetBlock:output_type -> pb.BlockResponse
+	7,  // 16: pb.NodeService.GetBlockByHeight:output_type -> pb.BlockResponse
+	10, // [10:17] is the sub-list for method output_type
+	3,  // [3:10] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_proto_node_proto_init() }
@@ -535,7 +594,7 @@ func file_proto_node_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_node_proto_rawDesc), len(file_proto_node_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
