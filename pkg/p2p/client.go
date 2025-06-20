@@ -93,3 +93,38 @@ func SyncBlocksFromPeer(peer string, localLatestHash string, db *storage.DB) {
 
 	log.Println("✅ Synced all missing blocks from peer!")
 }
+
+func SyncFromPeerByHeight(peer string, db *storage.DB) {
+	conn, err := grpc.Dial(peer, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Println("Connect error:", err)
+		return
+	}
+	defer conn.Close()
+
+	client := pb.NewNodeServiceClient(conn)
+
+	local, err := db.GetLatestBlock()
+	start := int64(0)
+	if err == nil && local != nil {
+		start = local.Height + 1
+	}
+
+	for {
+		resp, err := client.GetBlockByHeight(context.Background(), &pb.HeightRequest{Height: int64(start)})
+		if err != nil || resp.Block == nil {
+			log.Println("⛔️ Stop syncing at height:", start)
+			break
+		}
+
+		block := convertPbBlock(resp.Block)
+		err = db.SaveBlock(block)
+		if err != nil {
+			log.Println("Failed to save:", err)
+			break
+		}
+
+		log.Printf("🔁 Synced block at height %d (hash: %s)", block.Height, block.CurrentBlockHash)
+		start++
+	}
+}

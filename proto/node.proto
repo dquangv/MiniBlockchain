@@ -24,6 +24,7 @@ message Block {
   string merkleRoot = 2;
   string prevBlockHash = 3;
   string currentBlockHash = 4;
+  int64 height = 5;
 }
 
 message VoteRequest {
@@ -50,4 +51,9 @@ service NodeService {
   rpc CommitBlock(Block) returns (TxResponse);
   rpc GetLatestBlock(Empty) returns (BlockResponse);
   rpc GetBlock(BlockRequest) returns (BlockResponse);
+  rpc GetBlockByHeight(HeightRequest) returns (BlockResponse);
+}
+
+message HeightRequest {
+  int64 height = 1;
 }

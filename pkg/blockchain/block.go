@@ -11,9 +11,9 @@ type Block struct {
 	MerkleRoot       string
 	PrevBlockHash    string
 	CurrentBlockHash string
+	Height           int64
 }
 
-// Tạo Merkle Root từ danh sách giao dịch
 func CalculateMerkleRoot(txs []*Transaction) string {
 	var txHashes [][]byte
 	for _, tx := range txs {
@@ -30,7 +30,6 @@ func buildMerkleRoot(leaves [][]byte) []byte {
 	if len(leaves) == 0 {
 		return []byte{}
 	}
-
 	if len(leaves) == 1 {
 		return leaves[0]
 	}
@@ -42,9 +41,8 @@ func buildMerkleRoot(leaves [][]byte) []byte {
 		if i+1 < len(leaves) {
 			right = leaves[i+1]
 		} else {
-			right = left // copy node cuối nếu lẻ
+			right = left
 		}
-
 		hash := sha256.Sum256(append(left, right...))
 		newLevel = append(newLevel, hash[:])
 	}
@@ -54,18 +52,30 @@ func buildMerkleRoot(leaves [][]byte) []byte {
 
 func HashBlock(b *Block) string {
 	copyBlock := *b
-	copyBlock.CurrentBlockHash = "" // bỏ self-hash trước khi hash
+	copyBlock.CurrentBlockHash = ""
 	data, _ := json.Marshal(copyBlock)
 	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:])
 }
 
-func NewBlock(txs []*Transaction, prevHash string) *Block {
+func NewBlock(txs []*Transaction, prevHash string, height int64) *Block {
 	block := &Block{
 		Transactions:  txs,
 		PrevBlockHash: prevHash,
+		MerkleRoot:    CalculateMerkleRoot(txs),
+		Height:        height,
 	}
-	block.MerkleRoot = CalculateMerkleRoot(txs)
+	block.CurrentBlockHash = HashBlock(block)
+	return block
+}
+
+func CreateGenesisBlock() *Block {
+	block := &Block{
+		Height:        0,
+		PrevBlockHash: "",
+		Transactions:  []*Transaction{},
+		MerkleRoot:    "",
+	}
 	block.CurrentBlockHash = HashBlock(block)
 	return block
 }
