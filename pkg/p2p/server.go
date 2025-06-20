@@ -20,13 +20,26 @@ type NodeServer struct {
 	DBPath string
 	NodeID string
 	DB     *storage.DB
+	State  NodeState
 }
 
 func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*pb.TxResponse, error) {
 	log.Printf("Received transaction from %s to %s (%.2f)", tx.Sender, tx.Receiver, tx.Amount)
+
+	// Convert pb.Transaction → blockchain.Transaction
+	t := &blockchain.Transaction{
+		Sender:    tx.Sender,
+		Receiver:  tx.Receiver,
+		Amount:    tx.Amount,
+		Timestamp: tx.Timestamp,
+		Signature: tx.Signature,
+	}
+
+	blockchain.AddPendingTx(t) // 🆕 Gửi vào hàng chờ
+
 	return &pb.TxResponse{
 		Status:  "ok",
-		Message: "tx received",
+		Message: "tx received and pending",
 	}, nil
 }
 

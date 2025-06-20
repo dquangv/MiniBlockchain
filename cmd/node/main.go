@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+
 	"golang-chain/pkg/p2p"
 	"golang-chain/pkg/storage"
-	"os"
 )
 
 func main() {
@@ -21,25 +23,32 @@ func main() {
 
 	nodeID := fmt.Sprintf("follower-%s", port)
 
+	// Mở DB trước khi dùng
 	db, err := storage.NewDB(dbPath)
 	if err != nil {
-		fmt.Println("❌ Failed to open DB:", err)
-		return
+		log.Fatalln("❌ Failed to open DB:", err)
 	}
 	defer db.Close()
 
+	// Kiểm tra có block mới nhất không
 	var localHash string
 	latest, err := db.GetLatestBlock()
 	if err != nil {
 		fmt.Println("⚠️  No latest block found:", err)
-	} else {
+	} else if latest != nil {
 		localHash = latest.CurrentBlockHash
 	}
 
-	if peer != "none" {
+	// Nếu là Leader → start loop tạo block định kỳ
+	if peer == "none" {
+		log.Println("🧠 This node is the Leader.")
+		peers := []string{"localhost:50052", "localhost:50053"} // hoặc load từ config sau này
+		go p2p.StartLeaderLoop(db, peers)
+	} else {
 		fmt.Println("🟡 Syncing block from peer:", peer)
 		p2p.SyncBlocksFromPeer(peer, localHash, db)
 	}
 
+	// Khởi chạy gRPC server
 	p2p.StartGRPCServer(port, dbPath, nodeID, db)
 }
