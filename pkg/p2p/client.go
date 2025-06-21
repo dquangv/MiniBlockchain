@@ -95,36 +95,52 @@ func SyncBlocksFromPeer(peer string, localLatestHash string, db *storage.DB) {
 }
 
 func SyncFromPeerByHeight(peer string, db *storage.DB) {
+	log.Println("🌐 Syncing from peer:", peer)
+
 	conn, err := grpc.Dial(peer, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Println("Connect error:", err)
+		log.Println("❌ Connect error:", err)
 		return
 	}
 	defer conn.Close()
 
 	client := pb.NewNodeServiceClient(conn)
 
+	// 1. Lấy latest block của follower
 	local, err := db.GetLatestBlock()
 	start := int64(0)
 	if err == nil && local != nil {
 		start = local.Height + 1
+		log.Printf("🔍 Local height: %d — starting sync from %d", local.Height, start)
+	} else {
+		log.Println("📭 No local block found — full sync from height 0")
 	}
 
-	for {
-		resp, err := client.GetBlockByHeight(context.Background(), &pb.HeightRequest{Height: int64(start)})
+	// 2. Lấy latest block từ leader
+	latestResp, err := client.GetLatestBlock(context.Background(), &pb.Empty{})
+	if err != nil || latestResp.Block == nil {
+		log.Println("❌ Cannot fetch latest block from peer")
+		return
+	}
+	leaderHeight := latestResp.Block.Height
+	log.Printf("🌐 Peer has block height: %d", leaderHeight)
+
+	// 3. Lặp và sync từng block còn thiếu
+	for h := start; h <= leaderHeight; h++ {
+		resp, err := client.GetBlockByHeight(context.Background(), &pb.HeightRequest{Height: h})
 		if err != nil || resp.Block == nil {
-			log.Println("⛔️ Stop syncing at height:", start)
+			log.Printf("❌ Failed to get block at height %d", h)
 			break
 		}
 
 		block := convertPbBlock(resp.Block)
 		err = db.SaveBlock(block)
 		if err != nil {
-			log.Println("Failed to save:", err)
+			log.Printf("❌ Failed to save block at height %d: %v", h, err)
 			break
 		}
 
-		log.Printf("🔁 Synced block at height %d (hash: %s)", block.Height, block.CurrentBlockHash)
-		start++
+		log.Printf("✅ Synced block at height %d (hash: %s)", h, block.CurrentBlockHash)
 	}
+	log.Println("🎉 Sync completed successfully.")
 }
