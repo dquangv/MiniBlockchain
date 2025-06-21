@@ -48,10 +48,11 @@ func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*
 	}
 
 	blockchain.AddPendingTx(t) // 🆕 Gửi vào hàng chờ
+	log.Printf("📥 Transaction added to pending pool.")
 
 	return &pb.TxResponse{
 		Status:  "ok",
-		Message: "tx received and pending",
+		Message: "The transaction has been sent and is pending.",
 	}, nil
 }
 

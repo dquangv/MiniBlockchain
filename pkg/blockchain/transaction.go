@@ -28,7 +28,7 @@ func NewTransaction(sender, receiver []byte, amount float64) *Transaction {
 	}
 }
 
-// Hash nội dung giao dịch (không gồm chữ ký)
+// Hash calculates the SHA-256 hash of the transaction data.
 func (t *Transaction) Hash() ([]byte, error) {
 	txMap := map[string]interface{}{
 		"sender":    hex.EncodeToString(t.Sender),
@@ -45,7 +45,8 @@ func (t *Transaction) Hash() ([]byte, error) {
 	return hash[:], nil
 }
 
-// Ký giao dịch bằng private key
+// Sign signs the transaction hash using the sender's private key.
+// It uses ECDSA and embeds the resulting signature in the transaction.
 func (t *Transaction) Sign(priv *ecdsa.PrivateKey) error {
 	hash, err := t.Hash()
 	if err != nil {
@@ -56,13 +57,15 @@ func (t *Transaction) Sign(priv *ecdsa.PrivateKey) error {
 		return err
 	}
 
-	rBytes := r.FillBytes(make([]byte, 32)) // chuẩn hóa thành 32 byte
+	// Normalize the signature to fixed 64 bytes: 32 bytes for R + 32 bytes for S
+	rBytes := r.FillBytes(make([]byte, 32))
 	sBytes := s.FillBytes(make([]byte, 32))
 	t.Signature = append(rBytes, sBytes...)
 	return nil
 }
 
-// Xác thực chữ ký giao dịch
+// Verify checks whether the transaction's signature is valid
+// using the sender's public key. It ensures authenticity and integrity.
 func (t *Transaction) Verify(pub *ecdsa.PublicKey) (bool, error) {
 	if len(t.Signature) != 64 {
 		return false, errors.New("invalid signature length")

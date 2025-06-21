@@ -14,13 +14,13 @@ import (
 	"path/filepath"
 )
 
-// Wallet chứa cặp khóa
+// Wallet stores a pair of ECDSA private/public keys
 type Wallet struct {
 	PrivateKey *ecdsa.PrivateKey
 	PublicKey  *ecdsa.PublicKey
 }
 
-// Tạo ví mới
+// NewWallet generates a new ECDSA key pair and returns a wallet instance
 func NewWallet() (*Wallet, error) {
 	priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -32,7 +32,7 @@ func NewWallet() (*Wallet, error) {
 	}, nil
 }
 
-// Encode public key thành PEM []byte
+// EncodePublicKey converts an ECDSA public key to a PEM-encoded []byte
 func EncodePublicKey(pub *ecdsa.PublicKey) ([]byte, error) {
 	der, err := x509.MarshalPKIXPublicKey(pub)
 	if err != nil {
@@ -45,7 +45,7 @@ func EncodePublicKey(pub *ecdsa.PublicKey) ([]byte, error) {
 	return pem.EncodeToMemory(block), nil
 }
 
-// Decode PEM -> PublicKey
+// DecodePublicKey converts a PEM-encoded []byte back into an ECDSA public key
 func DecodePublicKey(data []byte) (*ecdsa.PublicKey, error) {
 	block, _ := pem.Decode(data)
 	if block == nil || block.Type != "PUBLIC KEY" {
@@ -62,7 +62,7 @@ func DecodePublicKey(data []byte) (*ecdsa.PublicKey, error) {
 	return pk, nil
 }
 
-// Encode private key thành PEM []byte
+// EncodePrivateKey converts an ECDSA private key to a PEM-encoded []byte
 func EncodePrivateKey(priv *ecdsa.PrivateKey) ([]byte, error) {
 	der, err := x509.MarshalECPrivateKey(priv)
 	if err != nil {
@@ -75,7 +75,7 @@ func EncodePrivateKey(priv *ecdsa.PrivateKey) ([]byte, error) {
 	return pem.EncodeToMemory(block), nil
 }
 
-// Decode PEM -> PrivateKey
+// DecodePrivateKey converts a PEM-encoded []byte back into an ECDSA private key
 func DecodePrivateKey(data []byte) (*ecdsa.PrivateKey, error) {
 	block, _ := pem.Decode(data)
 	if block == nil || block.Type != "EC PRIVATE KEY" {
@@ -84,14 +84,16 @@ func DecodePrivateKey(data []byte) (*ecdsa.PrivateKey, error) {
 	return x509.ParseECPrivateKey(block.Bytes)
 }
 
-// Hash public key thành địa chỉ ví
+// PublicKeyToAddress generates a wallet address from an ECDSA public key
+// by hashing its X and Y coordinates with SHA256
 func PublicKeyToAddress(pub *ecdsa.PublicKey) string {
 	pubBytes := append(pub.X.Bytes(), pub.Y.Bytes()...)
 	hash := sha256.Sum256(pubBytes)
 	return hex.EncodeToString(hash[:])
 }
 
-// Load ví từ file JSON
+// LoadWallet reads a wallet from a JSON file in the "wallets/" folder
+// The file should contain base64 PEM strings for the public and private key
 func LoadWallet(name string) (*Wallet, error) {
 	path := filepath.Join("wallets", name+"_wallet.json")
 	data, err := os.ReadFile(path)
@@ -123,6 +125,8 @@ func LoadWallet(name string) (*Wallet, error) {
 	}, nil
 }
 
+// ResolveSenderName attempts to match a given public key to a wallet name by
+// scanning through all JSON wallet files in the "wallets/" directory
 func ResolveSenderName(pub []byte) string {
 	files, err := os.ReadDir("wallets")
 	if err != nil {
@@ -145,7 +149,8 @@ func ResolveSenderName(pub []byte) string {
 		}
 
 		if keyMap["publicKey"] == string(pub) {
-			return f.Name()[:len(f.Name())-12] // cắt "_wallet.json"
+			// Strip off "_wallet.json" to get the user-friendly wallet name
+			return f.Name()[:len(f.Name())-12]
 		}
 	}
 
