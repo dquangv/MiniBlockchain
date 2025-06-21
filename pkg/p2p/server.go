@@ -10,6 +10,7 @@ import (
 	"golang-chain/pkg/blockchain"
 	"golang-chain/pkg/p2p/pb"
 	"golang-chain/pkg/storage"
+	"golang-chain/pkg/wallet"
 
 	"golang-chain/pkg/consensus"
 
@@ -22,18 +23,20 @@ type NodeServer struct {
 	DBPath string
 	NodeID string
 	DB     *storage.DB
-	State  NodeState
+	State  *NodeState
 }
 
 func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*pb.TxResponse, error) {
-	if s.State != StateLeader {
+	if *s.State != StateLeader {
 		return &pb.TxResponse{
 			Status:  "error",
 			Message: "Only the leader can accept transactions",
 		}, nil
 	}
 
-	log.Printf("Received transaction from %s to %s (%.2f)", tx.Sender, tx.Receiver, tx.Amount)
+	fromName := wallet.ResolveSenderName(tx.Sender)
+
+	log.Printf("Received transaction from %s to %s (%.2f coins)", fromName, tx.Receiver, tx.Amount)
 
 	// Convert pb.Transaction → blockchain.Transaction
 	t := &blockchain.Transaction{
@@ -55,11 +58,11 @@ func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*
 func (s *NodeServer) Ping(ctx context.Context, e *pb.Empty) (*pb.TxResponse, error) {
 	return &pb.TxResponse{
 		Status:  "pong",
-		Message: string(s.State),
+		Message: string(*s.State),
 	}, nil
 }
 
-func StartGRPCServer(port, dbPath, nodeID string, db *storage.DB, state NodeState) {
+func StartGRPCServer(port, dbPath, nodeID string, db *storage.DB, state *NodeState) {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Fatal("failed to listen:", err)
@@ -76,6 +79,7 @@ func StartGRPCServer(port, dbPath, nodeID string, db *storage.DB, state NodeStat
 	pb.RegisterNodeServiceServer(grpcServer, server)
 
 	fmt.Println("gRPC server listening on port", port)
+	fmt.Println("🔎 Current state:", *state)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
@@ -83,7 +87,7 @@ func StartGRPCServer(port, dbPath, nodeID string, db *storage.DB, state NodeStat
 
 // Follower xử lý block do Leader đề xuất để vote
 func (s *NodeServer) ProposeBlock(ctx context.Context, req *pb.VoteRequest) (*pb.VoteResponse, error) {
-	if s.State != StateFollower {
+	if *s.State != StateFollower {
 		log.Println("⚠️ Vote rejected: I am not a follower.")
 		return &pb.VoteResponse{
 			NodeId:   s.NodeID,
@@ -96,19 +100,28 @@ func (s *NodeServer) ProposeBlock(ctx context.Context, req *pb.VoteRequest) (*pb
 
 	latestBlock, err := s.DB.GetLatestBlock()
 	if err != nil {
-		log.Println("No latest block:", err)
-		latestBlock = nil
+		log.Println("⚠️ No latest block found, assuming fresh node")
+		if block.Height == 0 {
+			log.Println("✅ Accepting genesis block proposal.")
+			return &pb.VoteResponse{
+				NodeId:   s.NodeID,
+				Approved: true,
+			}, nil
+		}
+		log.Println("❌ Rejected: Genesis block must have height 0")
+		return &pb.VoteResponse{
+			NodeId:   s.NodeID,
+			Approved: false,
+		}, nil
 	}
 
 	newBlock := convertPbBlock(block)
 	isValid := consensus.VerifyBlock(newBlock, latestBlock)
 
-	vote := &pb.VoteResponse{
+	return &pb.VoteResponse{
 		NodeId:   s.NodeID,
 		Approved: isValid,
-	}
-
-	return vote, nil
+	}, nil
 }
 
 func convertPbBlock(pbBlock *pb.Block) *blockchain.Block {
