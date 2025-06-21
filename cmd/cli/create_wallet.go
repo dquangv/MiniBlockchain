@@ -42,5 +42,5 @@ func main() {
 
 	json.NewEncoder(file).Encode(data)
 
-	fmt.Println("✅ Ví đã được tạo và lưu tại:", filePath)
+	fmt.Println("✅ The wallet has been created and saved at: ", filePath)
 }

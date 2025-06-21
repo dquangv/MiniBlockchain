@@ -28,7 +28,7 @@ func main() {
 	}
 
 	block := resp.Block
-	fmt.Println("📦 Block hiện tại:")
+	fmt.Println("📦 The latest block:")
 	fmt.Println("👉 Height:       ", block.Height)
 	fmt.Println("👉 Hash:         ", block.CurrentBlockHash)
 	fmt.Println("👉 Prev Hash:    ", block.PrevBlockHash)

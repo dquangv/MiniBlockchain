@@ -14,6 +14,7 @@ type Block struct {
 	Height           int64
 }
 
+// CalculateMerkleRoot computes the Merkle root from all transactions in the block.
 func CalculateMerkleRoot(txs []*Transaction) string {
 	var txHashes [][]byte
 	for _, tx := range txs {
@@ -26,6 +27,8 @@ func CalculateMerkleRoot(txs []*Transaction) string {
 	return hex.EncodeToString(buildMerkleRoot(txHashes))
 }
 
+// buildMerkleRoot recursively builds the Merkle tree and returns the root hash.
+// If there's an odd number of nodes, the last one is duplicated to balance the tree.
 func buildMerkleRoot(leaves [][]byte) []byte {
 	if len(leaves) == 0 {
 		return []byte{}
@@ -50,6 +53,8 @@ func buildMerkleRoot(leaves [][]byte) []byte {
 	return buildMerkleRoot(newLevel)
 }
 
+// HashBlock computes a SHA-256 hash of the block's contents,
+// excluding its own current hash to avoid circular dependency.
 func HashBlock(b *Block) string {
 	copyBlock := *b
 	copyBlock.CurrentBlockHash = ""
@@ -58,6 +63,8 @@ func HashBlock(b *Block) string {
 	return hex.EncodeToString(hash[:])
 }
 
+// NewBlock creates a new block with the given transactions,
+// links it to the previous block via PrevBlockHash, and calculates the Merkle root and hash.
 func NewBlock(txs []*Transaction, prevHash string, height int64) *Block {
 	block := &Block{
 		Transactions:  txs,
@@ -69,6 +76,8 @@ func NewBlock(txs []*Transaction, prevHash string, height int64) *Block {
 	return block
 }
 
+// CreateGenesisBlock initializes the first block of the blockchain.
+// It has no transactions and no previous hash, and is always at height 0.
 func CreateGenesisBlock() *Block {
 	block := &Block{
 		Height:        0,

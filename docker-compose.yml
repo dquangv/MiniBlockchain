@@ -16,16 +16,8 @@ services:
     volumes:
       - ./wallets:/app/wallets
       - ./blockdata/node1:/app/data
-    command: >
-      sh -c "
-        ./go-blockchain & 
-        sleep 3 &&
-        ./create_wallet --name Alice &&
-        ./create_wallet --name Bob &&
-        sleep 1 &&
-        ./send_tx --from Alice --to Bob --amount 10 --node localhost:50051 &&
-        ./status --node localhost:50051 &&
-        tail -f /dev/null"
+    # 👇 Chạy node1 bình thường (không CLI tự động nữa)
+    command: ["./go-blockchain"]
 
   node2:
     build:
