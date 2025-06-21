@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"golang-chain/pkg/blockchain"
 	"golang-chain/pkg/p2p/pb"
@@ -13,24 +14,30 @@ import (
 )
 
 func main() {
-	fmt.Println("🚀 Sending signed tx to leader...")
+	from := flag.String("from", "", "Tên ví người gửi")
+	to := flag.String("to", "", "Tên người nhận (public key hoặc tên giả)")
+	amount := flag.Float64("amount", 0, "Số lượng coin")
+	nodeAddr := flag.String("node", "localhost:50051", "Địa chỉ node validator")
+	flag.Parse()
 
-	// Tạo ví thật sự
-	w, _ := wallet.NewWallet()
-	pubBytes, _ := wallet.EncodePublicKey(w.PublicKey)
-
-	tx := blockchain.NewTransaction(pubBytes, []byte("bob"), 10)
-
-	// Ký bằng private key thật
-	err := tx.Sign(w.PrivateKey)
-	if err != nil {
-		log.Fatalln("❌ Failed to sign tx:", err)
+	if *from == "" || *to == "" || *amount <= 0 {
+		log.Fatalln("⚠️  Dùng đúng: --from Alice --to Bob --amount 10")
 	}
 
-	// Gửi qua gRPC
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	w, err := wallet.LoadWallet(*from)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln("❌ Không load được ví:", err)
+	}
+
+	encodedSender, _ := wallet.EncodePublicKey(w.PublicKey)
+	tx := blockchain.NewTransaction(encodedSender, []byte(*to), *amount)
+	if err := tx.Sign(w.PrivateKey); err != nil {
+		log.Fatalln("❌ Lỗi khi ký giao dịch:", err)
+	}
+
+	conn, err := grpc.Dial(*nodeAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalln("❌ Kết nối node thất bại:", err)
 	}
 	defer conn.Close()
 
@@ -43,7 +50,7 @@ func main() {
 		Signature: tx.Signature,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln("❌ Gửi transaction thất bại:", err)
 	}
 
 	fmt.Println("📨", resp.Message)

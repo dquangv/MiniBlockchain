@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
+	"golang-chain/pkg/blockchain"
 	"golang-chain/pkg/p2p"
 	"golang-chain/pkg/storage"
 )
@@ -12,41 +14,62 @@ import (
 func main() {
 	fmt.Println("Hello from validator node!")
 
-	if len(os.Args) < 3 {
-		fmt.Println("⚠️  Usage: go run main.go <port> <db-path>")
-		return
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "50051"
 	}
 
-	port := os.Args[1]
-	dbPath := os.Args[2]
-	allPeers := []string{"localhost:50051", "localhost:50052", "localhost:50053"}
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "data/" + os.Getenv("NODE_ID")
+	}
 
-	nodeID := fmt.Sprintf("follower-%s", port)
+	isLeader := os.Getenv("IS_LEADER") == "true"
+	peerList := os.Getenv("PEERS")
+	var peers []string
+	if peerList != "" {
+		peers = strings.Split(peerList, ",")
+	}
 
-	// Mở DB trước khi dùng
+	nodeID := os.Getenv("NODE_ID")
+	if nodeID == "" {
+		nodeID = fmt.Sprintf("follower-%s", port)
+	}
+
+	// Mở DB
 	db, err := storage.NewDB(dbPath)
 	if err != nil {
 		log.Fatalln("❌ Failed to open DB:", err)
 	}
 	defer db.Close()
 
-	// Nếu là Leader → start loop tạo block định kỳ
-	// Xác định nodeState từ tham số truyền vào
-	var nodeState p2p.NodeState
-	var peers []string
+	state := p2p.StateSyncing
+	if isLeader {
+		// Tạo Genesis block nếu chưa có block nào
+		_, err = db.GetLatestBlock()
+		if err != nil {
+			log.Println("📦 No blocks found. Creating genesis block...")
+			genesis := blockchain.CreateGenesisBlock()
+			if err := db.SaveBlock(genesis); err != nil {
+				log.Fatalln("❌ Failed to create genesis block:", err)
+			}
+			log.Println("✅ Genesis block created.")
+		}
 
-	leader := p2p.DetectLeader(allPeers)
-	if leader == "" || port == "50051" { // nếu không thấy leader hoặc là node 50051 thì làm Leader
-		nodeState = p2p.StateLeader
 		log.Println("🧠 This node is the Leader.")
-		peers = []string{"localhost:50052", "localhost:50053"}
+		state = p2p.StateLeader
 		go p2p.StartLeaderLoop(db, peers)
 	} else {
-		nodeState = p2p.StateFollower
-		log.Println("🔄 Detected Leader at", leader, "→ syncing...")
-		p2p.SyncFromPeerByHeight(leader, db)
+		log.Println("🔄 This node is Syncing...")
+		if len(peers) > 0 {
+			p2p.SyncFromPeerByHeight(peers[0], db)
+		} else {
+			log.Println("⚠️ No peers found to sync from.")
+		}
+
+		state = p2p.StateFollower
+		log.Println("🔁 Sync complete. Now acting as Follower.")
 	}
 
-	// Khởi chạy gRPC server
-	p2p.StartGRPCServer(port, dbPath, nodeID, db, nodeState)
+	p2p.StartGRPCServer(port, dbPath, nodeID, db, &state)
 }

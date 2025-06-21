@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  node1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node1
+    environment:
+      NODE_ID: node1
+      IS_LEADER: "true"
+      PORT: 50051
+      PEERS: node2:50051,node3:50051
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./wallets:/app/wallets
+      - ./blockdata/node1:/app/data
+    command: >
+      sh -c "
+        ./go-blockchain & 
+        sleep 3 &&
+        ./create_wallet --name Alice &&
+        ./create_wallet --name Bob &&
+        sleep 1 &&
+        ./send_tx --from Alice --to Bob --amount 10 --node localhost:50051 &&
+        ./status --node localhost:50051 &&
+        tail -f /dev/null"
+
+  node2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node2
+    depends_on:
+      - node1
+    entrypoint: ["./wait-for-it.sh", "node1", "50051", "--", "./go-blockchain"]
+    environment:
+      NODE_ID: node2
+      IS_LEADER: "false"
+      PORT: 50051
+      PEERS: node1:50051,node3:50051
+    ports:
+      - "50052:50051"
+    volumes:
+      - ./blockdata/node2:/app/data
+
+  node3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node3
+    depends_on:
+      - node1
+    entrypoint: ["./wait-for-it.sh", "node1", "50051", "--", "./go-blockchain"]
+    environment:
+      NODE_ID: node3
+      IS_LEADER: "false"
+      PORT: 50051
+      PEERS: node1:50051,node2:50051
+    ports:
+      - "50053:50051"
+    volumes:
+      - ./blockdata/node3:/app/data
+
+volumes:
+  node1_data:
+  node2_data:
+  node3_data:

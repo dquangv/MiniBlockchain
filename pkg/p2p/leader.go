@@ -9,19 +9,6 @@ import (
 )
 
 func StartLeaderLoop(db *storage.DB, peers []string) {
-	// 🧱 Tạo Genesis Block nếu DB trống
-	latest, err := db.GetLatestBlock()
-	if err != nil || latest == nil {
-		log.Println("🧱 No blocks found. Creating genesis block...")
-
-		genesis := blockchain.CreateGenesisBlock()
-		if err := db.SaveBlock(genesis); err != nil {
-			log.Fatalln("❌ Failed to save genesis block:", err)
-		} else {
-			log.Println("✅ Genesis block created.")
-		}
-	}
-
 	// ⏱ Tạo block định kỳ
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
