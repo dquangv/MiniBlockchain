@@ -6,7 +6,7 @@ A lightweight blockchain simulation built with Golang. This system demonstrates 
 
 ## 🧠 Architecture & Technologies
 
-### ✅ Tech Stack:
+### 🛠 Tech Stack:
 - **Golang**: Main programming language.
 - **ECDSA** (`crypto/ecdsa`): For digital signatures.
 - **LevelDB** (`github.com/syndtr/goleveldb/leveldb`): Embedded key-value store for blocks.
@@ -85,7 +85,7 @@ If everything runs correctly, you'll see logs like this (abbreviated):
 ```
 
 ### 2. Available CLI Tools
-✅ Create wallet:
+🧰 Create wallet:
 ```bash
 $ docker exec -it node1 ./create_wallet --name Alice
 $ docker exec -it node1 ./create_wallet --name Bob
@@ -94,7 +94,7 @@ $ docker exec -it node1 ./create_wallet --name Bob
 ✅ The wallet has been created and saved at:  wallets/Alice_wallet.json
 ✅ The wallet has been created and saved at:  wallets/Bob_wallet.json
 ```
-✅ Send transaction:
+💸 Send transaction:
 ```bash
 $ docker exec -it node1 ./send_tx --from Alice --to Bob --amount 10 --node localhost:50051
 ```
@@ -117,7 +117,7 @@ $ docker exec -it node1 ./send_tx --from Alice --to Bob --amount 10 --node local
 ```
 Checking for pending transactions to create a new block every 5 seconds
 
-✅ View status block:
+📊 View status block:
 ```bash
 $ docker exec -it node1 ./status --node localhost:50051
 ```
@@ -128,3 +128,33 @@ $ docker exec -it node1 ./status --node localhost:50051
 👉 Prev Hash:     b50ad2d4bd47d6278d2b9387db537b221107d5f80f27954118a057d1b97af412
 👉 Tx count:      1
 ```
+
+### 🔐 Transactions & Signing
+Each transaction contains:
+- Sender: Public Key (PEM encoded)
+- Receiver: Wallet address (hex string)
+- Amount, Timestamp, and Signature
+Transactions are:
+- Signed by sender's private key
+- Verified by validator using public key before accepting into block
+
+### 🔄 Resync & Fault Tolerance
+When a node restarts:
+- It automatically syncs missing blocks from peers (starting from its latest known height)
+- No need to reinitialize data or genesis block
+- Maintains full chain consistency across all validators
+
+### 📌 Notes
+- Only the Leader can accept new transactions.
+- All nodes store their own LevelDB data locally (/app/data) and operate independently.
+- The Genesis Block is created only if the local database is empty.
+- Node roles are assigned via environment variables (IS_LEADER=true|false).
+- There is no automatic leader election—the leader is statically assigned.
+
+### 📚 Learnings & Key Concepts
+- How to implement a basic consensus protocol using voting and block proposals
+- Creating and verifying digital signatures with ECDSA
+- Generating wallet addresses from public keys
+- Building a Merkle root to secure transaction data
+- Inter-node communication with gRPC
+- Container orchestration with Docker Compose
