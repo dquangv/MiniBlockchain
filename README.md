@@ -134,6 +134,7 @@ Each transaction contains:
 - Sender: Public Key (PEM encoded)
 - Receiver: Wallet address (hex string)
 - Amount, Timestamp, and Signature
+
 Transactions are:
 - Signed by sender's private key
 - Verified by validator using public key before accepting into block
