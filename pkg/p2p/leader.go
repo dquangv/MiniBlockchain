@@ -2,10 +2,12 @@ package p2p
 
 import (
 	"log"
+	"math/big"
 	"time"
 
 	"golang-chain/pkg/blockchain"
 	"golang-chain/pkg/storage"
+	"golang-chain/pkg/wallet"
 )
 
 // StartLeaderLoop runs on the leader node and periodically checks for pending transactions.
@@ -55,8 +57,24 @@ func StartLeaderLoop(db *storage.DB, peers []string) {
 			BroadcastCommit(peers, pbBlock) // Notify followers to commit
 			log.Println("✅ Committed block at height", block.Height, "with", len(pending), "txs")
 			db.SaveBlock(block) // Save block locally
+
+			// ✅ Update balances
+			for _, tx := range block.Transactions {
+				sender := wallet.ResolveSenderName(tx.Sender)
+				receiver := string(tx.Receiver)
+
+				fromBal, _ := db.GetBalance(sender)
+				toBal, _ := db.GetBalance(receiver)
+
+				fromBal.Sub(fromBal, big.NewFloat(tx.Amount))
+				toBal.Add(toBal, big.NewFloat(tx.Amount))
+
+				db.SetBalance(sender, fromBal)
+				db.SetBalance(receiver, toBal)
+			}
 		} else {
 			log.Println("❌ Not enough votes to commit block at height", block.Height)
 		}
 	}
+
 }

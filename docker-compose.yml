@@ -26,7 +26,7 @@ services:
     container_name: node2
     depends_on:
       - node1
-    entrypoint: ["./wait-for-it.sh", "node1", "50051", "--", "./go-blockchain"]
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh node1 50051 -- ./go-blockchain"]
     environment:
       NODE_ID: node2
       IS_LEADER: "false"
@@ -44,7 +44,7 @@ services:
     container_name: node3
     depends_on:
       - node1
-    entrypoint: ["./wait-for-it.sh", "node1", "50051", "--", "./go-blockchain"]
+    entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh node1 50051 -- ./go-blockchain"]
     environment:
       NODE_ID: node3
       IS_LEADER: "false"

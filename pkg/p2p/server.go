@@ -15,7 +15,9 @@ import (
 	"golang-chain/pkg/consensus"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 type NodeServer struct {
@@ -233,4 +235,14 @@ func DetectLeader(peers []string) string {
 		}
 	}
 	return ""
+}
+
+func (s *NodeServer) GetBalance(ctx context.Context, req *pb.BalanceRequest) (*pb.BalanceResponse, error) {
+	bal, err := s.DB.GetBalance(req.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to get balance: %v", err)
+	}
+	return &pb.BalanceResponse{
+		Balance: bal.Text('f', 2),
+	}, nil
 }

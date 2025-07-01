@@ -52,8 +52,18 @@ service NodeService {
   rpc GetLatestBlock(Empty) returns (BlockResponse);
   rpc GetBlock(BlockRequest) returns (BlockResponse);
   rpc GetBlockByHeight(HeightRequest) returns (BlockResponse);
+  rpc GetBalance (BalanceRequest) returns (BalanceResponse);
 }
 
 message HeightRequest {
   int64 height = 1;
+}
+
+
+message BalanceRequest {
+  string name = 1;
+}
+
+message BalanceResponse {
+  string balance = 1;
 }
