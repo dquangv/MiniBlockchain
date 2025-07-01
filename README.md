@@ -129,6 +129,16 @@ $ docker exec -it node1 ./status --node localhost:50051
 👉 Tx count:      1
 ```
 
+📈 Check wallet balance:
+```bash
+$ docker exec -it node1 ./balance --name Alice
+$ docker exec -it node1 ./balance --name Bob
+```
+```csharp
+💰 Balance of Alice: -10.00
+💰 Balance of Bob:   10.00
+```
+
 ### 🔐 Transactions & Signing
 Each transaction contains:
 - Sender: Public Key (PEM encoded)
