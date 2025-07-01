@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"golang-chain/pkg/blockchain"
+	"golang-chain/pkg/p2p"
 	"golang-chain/pkg/p2p/pb"
 	"golang-chain/pkg/wallet"
 	"log"
-	"math/big"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -18,7 +18,7 @@ func main() {
 	from := flag.String("from", "", "Tên ví người gửi")
 	to := flag.String("to", "", "Tên người nhận (public key hoặc tên giả)")
 	amount := flag.Float64("amount", 0, "Số lượng coin")
-	nodeAddr := flag.String("node", "localhost:50051", "Địa chỉ node validator")
+	// nodeAddr := flag.String("node", "localhost:50051", "Địa chỉ node validator")
 	flag.Parse()
 
 	if !wallet.WalletExists(*from) {
@@ -43,7 +43,12 @@ func main() {
 		log.Fatalln("❌ Lỗi khi ký giao dịch:", err)
 	}
 
-	conn, err := grpc.Dial(*nodeAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	leader := p2p.DetectLeader([]string{"localhost:50051", "localhost:50052", "localhost:50053"})
+	if leader == "" {
+		log.Fatal("❌ Cannot detect leader")
+	}
+
+	conn, err := grpc.Dial(leader, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalln("❌ Kết nối node thất bại:", err)
 	}
@@ -59,18 +64,6 @@ func main() {
 	})
 	if err != nil {
 		log.Fatalln("❌ Gửi transaction thất bại:", err)
-	}
-
-	balResp, err := client.GetBalance(context.Background(), &pb.BalanceRequest{Name: *from})
-	if err != nil {
-		log.Fatalf("❌ Failed to get balance: %v", err)
-	}
-
-	balance, _ := new(big.Float).SetString(balResp.Balance)
-	amountFloat := big.NewFloat(*amount)
-
-	if balance.Cmp(amountFloat) < 0 {
-		log.Fatalf("❌ Insufficient balance. You have %s, trying to send %s", balance.Text('f', 2), amountFloat.Text('f', 2))
 	}
 
 	fmt.Println("📨", resp.Message)
