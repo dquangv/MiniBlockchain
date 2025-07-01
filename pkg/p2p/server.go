@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/big"
 	"net"
 	"time"
 
@@ -37,10 +38,27 @@ func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*
 	}
 
 	fromName := wallet.ResolveSenderName(tx.Sender)
+	toName := wallet.ResolveSenderName(tx.Receiver)
 
-	log.Printf("Received transaction from %s to %s (%.2f coins)", fromName, tx.Receiver, tx.Amount)
+	log.Printf("Received transaction from %s to %s (%.2f coins)", fromName, toName, tx.Amount)
 
-	// Convert pb.Transaction → blockchain.Transaction
+	// 🔍 Kiểm tra số dư trước
+	balance, err := s.DB.GetBalance(fromName)
+	if err != nil {
+		return &pb.TxResponse{
+			Status:  "error",
+			Message: fmt.Sprintf("❌ Failed to get balance: %v", err),
+		}, nil
+	}
+
+	amount := big.NewFloat(tx.Amount)
+	if balance.Cmp(amount) < 0 {
+		return &pb.TxResponse{
+			Status:  "fail",
+			Message: fmt.Sprintf("❌ Insufficient balance. You have %s, trying to send %.2f", balance.Text('f', 8), tx.Amount),
+		}, nil
+	}
+
 	t := &blockchain.Transaction{
 		Sender:    tx.Sender,
 		Receiver:  tx.Receiver,
@@ -49,7 +67,7 @@ func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*
 		Signature: tx.Signature,
 	}
 
-	blockchain.AddPendingTx(t) // 🆕 Gửi vào hàng chờ
+	blockchain.AddPendingTx(t)
 	log.Printf("📥 Transaction added to pending pool.")
 
 	return &pb.TxResponse{
