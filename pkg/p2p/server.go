@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/big"
 	"net"
+	"os"
 	"time"
 
 	"golang-chain/pkg/blockchain"
@@ -23,10 +24,13 @@ import (
 
 type NodeServer struct {
 	pb.UnimplementedNodeServiceServer
-	DBPath string
-	NodeID string
-	DB     *storage.DB
-	State  *NodeState
+	DBPath     string
+	NodeID     string
+	DB         *storage.DB
+	State      *NodeState
+	Priority   int
+	LeaderID   string
+	Priorities map[string]int // 🆕 lưu priority của các node khác
 }
 
 func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*pb.TxResponse, error) {
@@ -55,7 +59,7 @@ func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*
 	if balance.Cmp(amount) < 0 {
 		return &pb.TxResponse{
 			Status:  "fail",
-			Message: fmt.Sprintf("❌ Insufficient balance. You have %s, trying to send %.2f", balance.Text('f', 8), tx.Amount),
+			Message: fmt.Sprintf("❌ Insufficient balance. You have %s, trying to send %.2f", balance.Text('f', 2), tx.Amount),
 		}, nil
 	}
 
@@ -90,20 +94,31 @@ func StartGRPCServer(port, dbPath, nodeID string, db *storage.DB, state *NodeSta
 	}
 
 	server := &NodeServer{
-		DBPath: dbPath,
-		NodeID: nodeID,
-		DB:     db, // 🆕 xài lại db đã mở
-		State:  state,
+		DBPath:     dbPath,
+		NodeID:     nodeID,
+		DB:         db,
+		State:      state,
+		Priorities: make(map[string]int),
+		Priority:   generatePriority(), // 🆕 Khởi tạo priority ngẫu nhiên
+		LeaderID:   nodeID,             // ban đầu assume mình là leader
 	}
+
+	log.Printf("🎲 My priority is %d", server.Priority)
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterNodeServiceServer(grpcServer, server)
 
-	fmt.Println("gRPC server listening on port", port)
-	fmt.Println("🔎 Current state:", *state)
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+	go func() {
+		log.Printf("gRPC server listening on port %s", port)
+		log.Println("🔎 Current state:", *state)
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	// 🗳️ Delay election để gRPC sẵn sàng
+	time.Sleep(2 * time.Second)
+	StartElection(server, peersFromEnv())
 }
 
 // Follower xử lý block do Leader đề xuất để vote
@@ -263,4 +278,39 @@ func (s *NodeServer) GetBalance(ctx context.Context, req *pb.BalanceRequest) (*p
 	return &pb.BalanceResponse{
 		Balance: bal.Text('f', 2),
 	}, nil
+}
+
+var priorityMap = make(map[string]int)
+
+func (s *NodeServer) ExchangePriority(ctx context.Context, req *pb.PriorityRequest) (*pb.PriorityResponse, error) {
+	log.Printf("🤝 Received priority %d from %s", req.Priority, req.NodeId)
+	s.Priorities[req.NodeId] = int(req.Priority)
+	return &pb.PriorityResponse{}, nil
+}
+
+func NewNodeServer(port, dbPath, nodeID string, db *storage.DB, state *NodeState) *NodeServer {
+	return &NodeServer{
+		DBPath:     dbPath,
+		NodeID:     nodeID,
+		DB:         db,
+		State:      state,
+		Priority:   generatePriority(),
+		LeaderID:   nodeID, // mặc định assume mình
+		Priorities: make(map[string]int),
+	}
+}
+
+func (s *NodeServer) StartGRPC() {
+	lis, err := net.Listen("tcp", ":"+os.Getenv("PORT"))
+	if err != nil {
+		log.Fatal("failed to listen:", err)
+	}
+	grpcServer := grpc.NewServer()
+	pb.RegisterNodeServiceServer(grpcServer, s)
+
+	log.Println("🚀 gRPC server started on port", os.Getenv("PORT"))
+	// log.Println("🔎 Current state:", *s.State)
+	if err := grpcServer.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
+	}
 }
