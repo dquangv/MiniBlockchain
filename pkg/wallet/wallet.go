@@ -156,3 +156,9 @@ func ResolveSenderName(pub []byte) string {
 
 	return "Unknown"
 }
+
+func WalletExists(name string) bool {
+	path := filepath.Join("wallets", name+"_wallet.json")
+	_, err := os.Stat(path)
+	return err == nil
+}
