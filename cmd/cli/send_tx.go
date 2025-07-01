@@ -8,6 +8,7 @@ import (
 	"golang-chain/pkg/p2p/pb"
 	"golang-chain/pkg/wallet"
 	"log"
+	"math/big"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -19,6 +20,13 @@ func main() {
 	amount := flag.Float64("amount", 0, "Số lượng coin")
 	nodeAddr := flag.String("node", "localhost:50051", "Địa chỉ node validator")
 	flag.Parse()
+
+	if !wallet.WalletExists(*from) {
+		log.Fatalf("❌ Wallet %s does not exist.", *from)
+	}
+	if !wallet.WalletExists(*to) {
+		log.Fatalf("❌ Wallet %s does not exist.", *to)
+	}
 
 	if *from == "" || *to == "" || *amount <= 0 {
 		log.Fatalln("⚠️  Dùng đúng: --from Alice --to Bob --amount 10")
@@ -51,6 +59,18 @@ func main() {
 	})
 	if err != nil {
 		log.Fatalln("❌ Gửi transaction thất bại:", err)
+	}
+
+	balResp, err := client.GetBalance(context.Background(), &pb.BalanceRequest{Name: *from})
+	if err != nil {
+		log.Fatalf("❌ Failed to get balance: %v", err)
+	}
+
+	balance, _ := new(big.Float).SetString(balResp.Balance)
+	amountFloat := big.NewFloat(*amount)
+
+	if balance.Cmp(amountFloat) < 0 {
+		log.Fatalf("❌ Insufficient balance. You have %s, trying to send %s", balance.Text('f', 2), amountFloat.Text('f', 2))
 	}
 
 	fmt.Println("📨", resp.Message)
