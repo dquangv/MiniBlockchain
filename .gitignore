@@ -34,3 +34,4 @@ blockdata
 go.sum
 wallets/Alice_wallet.json
 wallets/Bob_wallet.json
+wallets
