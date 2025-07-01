@@ -27,6 +27,7 @@ const (
 	NodeService_GetBlock_FullMethodName         = "/pb.NodeService/GetBlock"
 	NodeService_GetBlockByHeight_FullMethodName = "/pb.NodeService/GetBlockByHeight"
 	NodeService_GetBalance_FullMethodName       = "/pb.NodeService/GetBalance"
+	NodeService_ExchangePriority_FullMethodName = "/pb.NodeService/ExchangePriority"
 )
 
 // NodeServiceClient is the client API for NodeService service.
@@ -41,6 +42,7 @@ type NodeServiceClient interface {
 	GetBlock(ctx context.Context, in *BlockRequest, opts ...grpc.CallOption) (*BlockResponse, error)
 	GetBlockByHeight(ctx context.Context, in *HeightRequest, opts ...grpc.CallOption) (*BlockResponse, error)
 	GetBalance(ctx context.Context, in *BalanceRequest, opts ...grpc.CallOption) (*BalanceResponse, error)
+	ExchangePriority(ctx context.Context, in *PriorityRequest, opts ...grpc.CallOption) (*PriorityResponse, error)
 }
 
 type nodeServiceClient struct {
@@ -131,6 +133,16 @@ func (c *nodeServiceClient) GetBalance(ctx context.Context, in *BalanceRequest, 
 	return out, nil
 }
 
+func (c *nodeServiceClient) ExchangePriority(ctx context.Context, in *PriorityRequest, opts ...grpc.CallOption) (*PriorityResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PriorityResponse)
+	err := c.cc.Invoke(ctx, NodeService_ExchangePriority_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NodeServiceServer is the server API for NodeService service.
 // All implementations must embed UnimplementedNodeServiceServer
 // for forward compatibility.
@@ -143,6 +155,7 @@ type NodeServiceServer interface {
 	GetBlock(context.Context, *BlockRequest) (*BlockResponse, error)
 	GetBlockByHeight(context.Context, *HeightRequest) (*BlockResponse, error)
 	GetBalance(context.Context, *BalanceRequest) (*BalanceResponse, error)
+	ExchangePriority(context.Context, *PriorityRequest) (*PriorityResponse, error)
 	mustEmbedUnimplementedNodeServiceServer()
 }
 
@@ -176,6 +189,9 @@ func (UnimplementedNodeServiceServer) GetBlockByHeight(context.Context, *HeightR
 }
 func (UnimplementedNodeServiceServer) GetBalance(context.Context, *BalanceRequest) (*BalanceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetBalance not implemented")
+}
+func (UnimplementedNodeServiceServer) ExchangePriority(context.Context, *PriorityRequest) (*PriorityResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExchangePriority not implemented")
 }
 func (UnimplementedNodeServiceServer) mustEmbedUnimplementedNodeServiceServer() {}
 func (UnimplementedNodeServiceServer) testEmbeddedByValue()                     {}
@@ -342,6 +358,24 @@ func _NodeService_GetBalance_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NodeService_ExchangePriority_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PriorityRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServiceServer).ExchangePriority(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NodeService_ExchangePriority_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServiceServer).ExchangePriority(ctx, req.(*PriorityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // NodeService_ServiceDesc is the grpc.ServiceDesc for NodeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -380,6 +414,10 @@ var NodeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBalance",
 			Handler:    _NodeService_GetBalance_Handler,
+		},
+		{
+			MethodName: "ExchangePriority",
+			Handler:    _NodeService_ExchangePriority_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
