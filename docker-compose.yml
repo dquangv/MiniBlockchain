@@ -8,7 +8,6 @@ services:
     container_name: node1
     environment:
       NODE_ID: node1
-      IS_LEADER: "true"
       PORT: 50051
       PEERS: node2:50051,node3:50051
     ports:
@@ -29,7 +28,6 @@ services:
     entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh node1 50051 -- ./go-blockchain"]
     environment:
       NODE_ID: node2
-      IS_LEADER: "false"
       PORT: 50051
       PEERS: node1:50051,node3:50051
     ports:
@@ -47,7 +45,6 @@ services:
     entrypoint: ["/bin/sh", "-c", "./wait-for-it.sh node1 50051 -- ./go-blockchain"]
     environment:
       NODE_ID: node3
-      IS_LEADER: "false"
       PORT: 50051
       PEERS: node1:50051,node2:50051
     ports:

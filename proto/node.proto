@@ -53,6 +53,7 @@ service NodeService {
   rpc GetBlock(BlockRequest) returns (BlockResponse);
   rpc GetBlockByHeight(HeightRequest) returns (BlockResponse);
   rpc GetBalance (BalanceRequest) returns (BalanceResponse);
+  rpc ExchangePriority (PriorityRequest) returns (PriorityResponse);
 }
 
 message HeightRequest {
@@ -66,4 +67,13 @@ message BalanceRequest {
 
 message BalanceResponse {
   string balance = 1;
+}
+
+message PriorityRequest {
+  string nodeId = 1;
+  int32 priority = 2;
+}
+
+message PriorityResponse {
+  string leaderId = 1;
 }
