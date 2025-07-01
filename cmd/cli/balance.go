@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"golang-chain/pkg/p2p/pb"
+	"golang-chain/pkg/wallet"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -16,6 +17,10 @@ func main() {
 	name := flag.String("name", "", "Wallet name")
 	node := flag.String("node", "localhost:50051", "Node address (host:port)")
 	flag.Parse()
+
+	if !wallet.WalletExists(*name) {
+		log.Fatalf("❌ Wallet %s does not exist.", *name)
+	}
 
 	if *name == "" {
 		log.Fatalln("⚠️  Usage: ./balance --name Alice")
