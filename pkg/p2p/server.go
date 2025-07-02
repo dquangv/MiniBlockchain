@@ -283,9 +283,21 @@ func (s *NodeServer) GetBalance(ctx context.Context, req *pb.BalanceRequest) (*p
 var priorityMap = make(map[string]int)
 
 func (s *NodeServer) ExchangePriority(ctx context.Context, req *pb.PriorityRequest) (*pb.PriorityResponse, error) {
-	log.Printf("🤝 Received priority %d from %s", req.Priority, req.NodeId)
+	// Lưu priority lại
 	s.Priorities[req.NodeId] = int(req.Priority)
-	return &pb.PriorityResponse{}, nil
+	log.Printf("🤝 Received priority %d from %s", req.Priority, req.NodeId)
+
+	// Nếu mình không phải leader thì cập nhật leaderID theo bên gửi (có thể đã bầu xong)
+	if *s.State != StateLeader {
+		s.LeaderID = req.NodeId
+		CurrentLeader = peerAddressByID(req.NodeId, peersFromEnv()) // <- bạn cần viết hàm này
+		*s.State = StateFollower
+	}
+
+	return &pb.PriorityResponse{
+		LeaderId:     s.LeaderID,
+		Acknowledged: true,
+	}, nil
 }
 
 func NewNodeServer(port, dbPath, nodeID string, db *storage.DB, state *NodeState) *NodeServer {
