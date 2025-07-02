@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	"golang-chain/pkg/blockchain"
@@ -31,6 +32,7 @@ type NodeServer struct {
 	Priority   int
 	LeaderID   string
 	Priorities map[string]int // 🆕 lưu priority của các node khác
+	Mutex      sync.Mutex
 }
 
 func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*pb.TxResponse, error) {
@@ -282,10 +284,22 @@ func (s *NodeServer) GetBalance(ctx context.Context, req *pb.BalanceRequest) (*p
 
 var priorityMap = make(map[string]int)
 
+// ExchangePriority: dùng mutex và log kỹ càng
 func (s *NodeServer) ExchangePriority(ctx context.Context, req *pb.PriorityRequest) (*pb.PriorityResponse, error) {
-	log.Printf("🤝 Received priority %d from %s", req.Priority, req.NodeId)
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	if s.Priorities == nil {
+		s.Priorities = make(map[string]int)
+	}
 	s.Priorities[req.NodeId] = int(req.Priority)
-	return &pb.PriorityResponse{}, nil
+	log.Printf("🤝 Received priority %d from %s", req.Priority, req.NodeId)
+	log.Printf("📥 All priorities received so far: %+v", s.Priorities)
+
+	return &pb.PriorityResponse{
+		Acknowledged: true,
+		LeaderId:     s.LeaderID,
+	}, nil
 }
 
 func NewNodeServer(port, dbPath, nodeID string, db *storage.DB, state *NodeState) *NodeServer {

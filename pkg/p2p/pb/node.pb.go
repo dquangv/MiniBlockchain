@@ -632,6 +632,7 @@ func (x *PriorityRequest) GetPriority() int32 {
 type PriorityResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	LeaderId      string                 `protobuf:"bytes,1,opt,name=leaderId,proto3" json:"leaderId,omitempty"`
+	Acknowledged  bool                   `protobuf:"varint,2,opt,name=acknowledged,proto3" json:"acknowledged,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -671,6 +672,13 @@ func (x *PriorityResponse) GetLeaderId() string {
 		return x.LeaderId
 	}
 	return ""
+}
+
+func (x *PriorityResponse) GetAcknowledged() bool {
+	if x != nil {
+		return x.Acknowledged
+	}
+	return false
 }
 
 var File_proto_node_proto protoreflect.FileDescriptor
@@ -714,9 +722,10 @@ const file_proto_node_proto_rawDesc = "" +
 	"\abalance\x18\x01 \x01(\tR\abalance\"E\n" +
 	"\x0fPriorityRequest\x12\x16\n" +
 	"\x06nodeId\x18\x01 \x01(\tR\x06nodeId\x12\x1a\n" +
-	"\bpriority\x18\x02 \x01(\x05R\bpriority\".\n" +
+	"\bpriority\x18\x02 \x01(\x05R\bpriority\"R\n" +
 	"\x10PriorityResponse\x12\x1a\n" +
-	"\bleaderId\x18\x01 \x01(\tR\bleaderId2\xd2\x03\n" +
+	"\bleaderId\x18\x01 \x01(\tR\bleaderId\x12\"\n" +
+	"\facknowledged\x18\x02 \x01(\bR\facknowledged2\xd2\x03\n" +
 	"\vNodeService\x122\n" +
 	"\x0fSendTransaction\x12\x0f.pb.Transaction\x1a\x0e.pb.TxResponse\x12!\n" +
 	"\x04Ping\x12\t.pb.Empty\x1a\x0e.pb.TxResponse\x121\n" +
