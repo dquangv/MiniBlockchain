@@ -68,6 +68,9 @@ func main() {
 	// 🚀 Start gRPC server
 	go server.StartGRPC()
 
+	// Bắt đầu monitor leader
+	p2p.MonitorLeader(server, peers)
+
 	// 🗳️ Bắt đầu bầu cử sau khi server sẵn sàng
 	time.Sleep(2 * time.Second)
 	p2p.StartElection(server, peers)
