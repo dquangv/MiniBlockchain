@@ -22,10 +22,17 @@ func generatePriority() int {
 func StartElection(server *NodeServer, peers []string) {
 	myID := server.NodeID
 	myPriority := server.Priority
-	server.Priorities[myID] = myPriority
+
+	// Reset lại priorities và leader
+	server.Priorities = map[string]int{
+		myID: myPriority,
+	}
+	CurrentLeader = ""
 	log.Printf("🎲 My priority is %d", myPriority)
 
-	// Gửi priority cho tất cả peer
+	aliveNodes := map[string]bool{myID: true} // node hiện tại là alive
+
+	// Gửi priority cho các node khác
 	for _, peer := range peers {
 		if strings.Contains(peer, myID) {
 			continue
@@ -33,30 +40,40 @@ func StartElection(server *NodeServer, peers []string) {
 
 		conn, err := grpc.Dial(peer, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
-			log.Printf("❌ Failed to connect to %s: %v", peer, err)
+			log.Printf("❌ Cannot connect to peer %s", peer)
 			continue
 		}
 		defer conn.Close()
 
 		client := pb.NewNodeServiceClient(conn)
-		_, err = client.ExchangePriority(context.Background(), &pb.PriorityRequest{
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		_, err = client.ExchangePriority(ctx, &pb.PriorityRequest{
 			NodeId:   myID,
 			Priority: int32(myPriority),
 		})
 		if err != nil {
-			log.Printf("⚠️ Error exchanging with %s: %v", peer, err)
+			log.Printf("⚠️ Failed to send priority to %s", peer)
 			continue
 		}
+
+		peerID := extractNodeID(peer)
+		aliveNodes[peerID] = true
+		log.Printf("✅ Got response from %s", peer)
 	}
 
-	// 🕒 Đợi tất cả node gửi xong (ví dụ 2 giây)
-	time.Sleep(2 * time.Second)
+	// Đợi các node khác phản hồi xong
+	time.Sleep(1 * time.Second)
 
-	// 🧠 Lúc này tất cả priority đã được lưu → mới bắt đầu chọn leader
+	// Chọn leader từ các node còn sống
 	highest := myPriority
 	leader := myID
 
 	for id, p := range server.Priorities {
+		if !aliveNodes[id] {
+			continue // Loại node chết ra
+		}
 		if p > highest || (p == highest && id > leader) {
 			highest = p
 			leader = id
@@ -64,6 +81,8 @@ func StartElection(server *NodeServer, peers []string) {
 	}
 
 	server.LeaderID = leader
+	CurrentLeader = peerAddressByID(leader, peers)
+
 	if leader == myID {
 		*server.State = StateLeader
 		log.Println("👑 Elected as leader after full priority comparison")
@@ -77,4 +96,20 @@ func StartElection(server *NodeServer, peers []string) {
 func peersFromEnv() []string {
 	raw := os.Getenv("PEERS")
 	return strings.Split(raw, ",")
+}
+
+func peerAddressByID(nodeID string, peers []string) string {
+	for _, p := range peers {
+		if strings.Contains(p, nodeID) {
+			return p
+		}
+	}
+	return ""
+}
+
+func extractNodeID(addr string) string {
+	if idx := strings.Index(addr, ":"); idx != -1 {
+		return addr[:idx]
+	}
+	return addr
 }
