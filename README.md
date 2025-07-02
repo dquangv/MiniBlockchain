@@ -14,15 +14,11 @@ A lightweight blockchain simulation built with Golang. This system demonstrates 
 - **Docker + Docker Compose**: Containerized environment for the full network.
 
 ### 🏗️ System Architecture:
-- **3 validator nodes**:
-  - `node1` = **Leader**
-  - `node2`, `node3` = **Followers**
-- **Leader-Follower consensus**:
-  - Leader receives transactions, creates blocks, and proposes them.
-  - Followers validate the block and respond with a vote.
-  - A block is committed only if **at least 2 votes** are received.
-- **Recovery capability**:
-  - Any node that restarts will automatically **synchronize missing blocks** from peers to catch up with the network.
+- 3 validator nodes: node1, node2, node3 — each with a unique NODE_ID, communicating via gRPC.
+- Leader is elected automatically based on randomly generated priority.
+- Only the Leader receives transactions, creates blocks, and proposes them to other nodes for voting.
+- A block is committed when ≥2 votes are received (Leader + 1 follower).
+- When a node restarts, it automatically syncs missing blocks from peers to catch up.
 
 ---
 
@@ -52,36 +48,72 @@ docker compose up --build
 ✨ Expected output
 If everything runs correctly, you'll see logs like this (abbreviated):
 ```csharp
-2025-06-21 13:13:07 node3  | Hello from validator node!
-2025-06-21 13:13:07 node3  | 2025/06/21 06:13:07 🔄 This node is Syncing...
-2025-06-21 13:13:07 node3  | 2025/06/21 06:13:07 🌐 Syncing from peer: node1:50051
-2025-06-21 13:13:07 node3  | 2025/06/21 06:13:07 📭 No local block found — full sync from height 0
-2025-06-21 13:13:07 node3  | 2025/06/21 06:13:07 🌐 Peer has block height: 0
-2025-06-21 13:13:07 node3  | 2025/06/21 06:13:07 ✅ Synced block at height 0 (hash: b50ad2d4bd47d6278d2b9387db537b221107d5f80f27954118a057d1b97af412)
-2025-06-21 13:13:07 node3  | 2025/06/21 06:13:07 🎉 Sync completed successfully.
-2025-06-21 13:13:07 node3  | 2025/06/21 06:13:07 🔁 Sync complete. Now acting as Follower.
-2025-06-21 13:13:07 node3  | gRPC server listening on port 50051
-2025-06-21 13:13:07 node3  | 🔎 Current state: Follower
-2025-06-21 13:13:07 node1  | Hello from validator node!
-2025-06-21 13:13:07 node1  | 2025/06/21 06:13:07 📦 No blocks found. Creating genesis block...
-2025-06-21 13:13:07 node1  | 2025/06/21 06:13:07 ✅ Genesis block created.
-2025-06-21 13:13:07 node1  | 2025/06/21 06:13:07 🧠 This node is the Leader.
-2025-06-21 13:13:07 node1  | gRPC server listening on port 50051
-2025-06-21 13:13:07 node1  | 🔎 Current state: Leader
-2025-06-21 13:13:07 node2  | Hello from validator node!
-2025-06-21 13:13:07 node2  | 2025/06/21 06:13:07 🔄 This node is Syncing...
-2025-06-21 13:13:07 node2  | 2025/06/21 06:13:07 🌐 Syncing from peer: node1:50051
-2025-06-21 13:13:07 node2  | 2025/06/21 06:13:07 📭 No local block found — full sync from height 0
-2025-06-21 13:13:07 node2  | 2025/06/21 06:13:07 🌐 Peer has block height: 0
-2025-06-21 13:13:07 node2  | 2025/06/21 06:13:07 ✅ Synced block at height 0 (hash: b50ad2d4bd47d6278d2b9387db537b221107d5f80f27954118a057d1b97af412)
-2025-06-21 13:13:07 node2  | 2025/06/21 06:13:07 🎉 Sync completed successfully.
-2025-06-21 13:13:07 node2  | 2025/06/21 06:13:07 🔁 Sync complete. Now acting as Follower.
-2025-06-21 13:13:07 node2  | gRPC server listening on port 50051
-2025-06-21 13:13:07 node2  | 🔎 Current state: Follower
-2025-06-21 13:13:12 node1  | 2025/06/21 06:13:12 ⏳ Tick! Checking for pending transactions...
-2025-06-21 13:13:12 node1  | 2025/06/21 06:13:12 🔍 No pending transactions. Skipping block creation.
-2025-06-21 13:13:17 node1  | 2025/06/21 06:13:17 ⏳ Tick! Checking for pending transactions...
-2025-06-21 13:13:17 node1  | 2025/06/21 06:13:17 🔍 No pending transactions. Skipping block creation.
+2025-07-02 17:32:46 node1  | Hello from validator node!
+2025-07-02 17:32:46 node1  | 2025/07/02 10:32:46 🔄 This node is Syncing...
+2025-07-02 17:32:46 node1  | 2025/07/02 10:32:46 🌐 Syncing from peer: node2:50051
+2025-07-02 17:32:46 node1  | 2025/07/02 10:32:46 🔍 Local height: 14 — starting sync from 15
+2025-07-02 17:32:48 node2  | ⏳ Waiting for node1:50051...
+2025-07-02 17:32:48 node3  | ⏳ Waiting for node1:50051...
+2025-07-02 17:32:49 node2  | ⏳ Waiting for node1:50051...
+2025-07-02 17:32:49 node3  | ⏳ Waiting for node1:50051...
+2025-07-02 17:32:50 node2  | ⏳ Waiting for node1:50051...
+2025-07-02 17:32:50 node3  | ⏳ Waiting for node1:50051...
+2025-07-02 17:32:50 node1  | 2025/07/02 10:32:50 ❌ Cannot fetch latest block from peer
+2025-07-02 17:32:50 node1  | 2025/07/02 10:32:50 🎉 Sync completed successfully.
+2025-07-02 17:32:50 node1  | 2025/07/02 10:32:50 🚀 gRPC server started on port 50051
+2025-07-02 17:32:51 node2  | Hello from validator node!
+2025-07-02 17:32:51 node2  | 2025/07/02 10:32:51 🔄 This node is Syncing...
+2025-07-02 17:32:51 node2  | 2025/07/02 10:32:51 🌐 Syncing from peer: node1:50051
+2025-07-02 17:32:51 node2  | 2025/07/02 10:32:51 🔍 Local height: 14 — starting sync from 15
+2025-07-02 17:32:51 node2  | 2025/07/02 10:32:51 🌐 Peer has block height: 14
+2025-07-02 17:32:51 node2  | 2025/07/02 10:32:51 🎉 Sync completed successfully.
+2025-07-02 17:32:51 node2  | 2025/07/02 10:32:51 🎉 Sync completed successfully.
+2025-07-02 17:32:51 node2  | 2025/07/02 10:32:51 🚀 gRPC server started on port 50051
+2025-07-02 17:32:51 node3  | Hello from validator node!
+2025-07-02 17:32:51 node3  | 2025/07/02 10:32:51 🔄 This node is Syncing...
+2025-07-02 17:32:51 node3  | 2025/07/02 10:32:51 🌐 Syncing from peer: node1:50051
+2025-07-02 17:32:51 node3  | 2025/07/02 10:32:51 🔍 Local height: 14 — starting sync from 15
+2025-07-02 17:32:51 node3  | 2025/07/02 10:32:51 🌐 Peer has block height: 14
+2025-07-02 17:32:51 node3  | 2025/07/02 10:32:51 🎉 Sync completed successfully.
+2025-07-02 17:32:51 node3  | 2025/07/02 10:32:51 🎉 Sync completed successfully.
+2025-07-02 17:32:51 node3  | 2025/07/02 10:32:51 🚀 gRPC server started on port 50051
+2025-07-02 17:32:52 node1  | 2025/07/02 10:32:52 🗳️ No leader detected. Starting election...
+2025-07-02 17:32:52 node1  | 2025/07/02 10:32:52 🗳️ No leader detected. Starting election...
+2025-07-02 17:32:52 node1  | 2025/07/02 10:32:52 🎲 My priority is 528
+2025-07-02 17:32:52 node1  | 2025/07/02 10:32:52 📡 Alive peers: [node1 node2 node3]
+2025-07-02 17:32:52 node1  | 2025/07/02 10:32:52 🕒 Waiting for 3 priorities...
+2025-07-02 17:32:52 node2  | 2025/07/02 10:32:52 🤝 Received priority 528 from node1
+2025-07-02 17:32:52 node2  | 2025/07/02 10:32:52 📥 All priorities received so far: map[node1:528]
+2025-07-02 17:32:52 node3  | 2025/07/02 10:32:52 🤝 Received priority 528 from node1
+2025-07-02 17:32:52 node3  | 2025/07/02 10:32:52 📥 All priorities received so far: map[node1:528]
+2025-07-02 17:32:53 node2  | 2025/07/02 10:32:53 🗳️ No leader detected. Starting election...
+2025-07-02 17:32:53 node2  | 2025/07/02 10:32:53 🗳️ No leader detected. Starting election...
+2025-07-02 17:32:53 node2  | 2025/07/02 10:32:53 🎲 My priority is 109
+2025-07-02 17:32:53 node2  | 2025/07/02 10:32:53 📡 Alive peers: [node2 node1 node3]
+2025-07-02 17:32:53 node2  | 2025/07/02 10:32:53 🕒 Waiting for 3 priorities...
+2025-07-02 17:32:53 node3  | 2025/07/02 10:32:53 🤝 Received priority 109 from node2
+2025-07-02 17:32:53 node3  | 2025/07/02 10:32:53 📥 All priorities received so far: map[node1:528 node2:109]
+2025-07-02 17:32:53 node1  | 2025/07/02 10:32:53 🤝 Received priority 109 from node2
+2025-07-02 17:32:53 node1  | 2025/07/02 10:32:53 📥 All priorities received so far: map[node1:528 node2:109]
+2025-07-02 17:32:53 node3  | 2025/07/02 10:32:53 🗳️ No leader detected. Starting election...
+2025-07-02 17:32:53 node3  | 2025/07/02 10:32:53 🗳️ No leader detected. Starting election...
+2025-07-02 17:32:53 node3  | 2025/07/02 10:32:53 🎲 My priority is 34
+2025-07-02 17:32:53 node3  | 2025/07/02 10:32:53 📡 Alive peers: [node3 node1 node2]
+2025-07-02 17:32:53 node3  | 2025/07/02 10:32:53 🕒 Waiting for 3 priorities...
+2025-07-02 17:32:53 node3  | 2025/07/02 10:32:53 🤖 I am a follower. Leader is node1
+2025-07-02 17:32:53 node1  | 2025/07/02 10:32:53 🤝 Received priority 34 from node3
+2025-07-02 17:32:53 node1  | 2025/07/02 10:32:53 📥 All priorities received so far: map[node1:528 node2:109 node3:34]
+2025-07-02 17:32:53 node2  | 2025/07/02 10:32:53 🤝 Received priority 34 from node3
+2025-07-02 17:32:53 node2  | 2025/07/02 10:32:53 📥 All priorities received so far: map[node1:528 node2:109 node3:34]
+2025-07-02 17:32:53 node1  | 2025/07/02 10:32:53 👑 Elected as leader after full priority comparison
+2025-07-02 17:32:53 node2  | 2025/07/02 10:32:53 🤖 I am a follower. Leader is node1
+2025-07-02 17:32:58 node3  | 2025/07/02 10:32:58 ✅ Leader node1 still alive
+2025-07-02 17:32:58 node1  | 2025/07/02 10:32:58 ⏳ Tick! Checking for pending transactions...
+2025-07-02 17:32:58 node1  | 2025/07/02 10:32:58 🔍 No pending transactions. Skipping block creation.
+2025-07-02 17:32:58 node2  | 2025/07/02 10:32:58 ✅ Leader node1 still alive
+2025-07-02 17:33:03 node3  | 2025/07/02 10:33:03 ✅ Leader node1 still alive
+2025-07-02 17:33:03 node1  | 2025/07/02 10:33:03 ⏳ Tick! Checking for pending transactions...
+2025-07-02 17:33:03 node1  | 2025/07/02 10:33:03 🔍 No pending transactions. Skipping block creation.
 ```
 
 ### 2. Available CLI Tools
@@ -149,23 +181,36 @@ Transactions are:
 - Signed by sender's private key
 - Verified by validator using public key before accepting into block
 
-### 🔄 Resync & Fault Tolerance
-When a node restarts:
-- It automatically syncs missing blocks from peers (starting from its latest known height)
-- No need to reinitialize data or genesis block
-- Maintains full chain consistency across all validators
+### 🔄 Leader Election & Fault Tolerance
+- When no Leader is detected or the current Leader becomes unresponsive, the system automatically triggers a re-election.
+- Each node generates a random priority and broadcasts it to currently alive peers only.
+- Election only starts after receiving enough priorities from reachable nodes.
+- The node with the highest priority (or lexicographically greater NODE_ID if tied) becomes the Leader.
+- When a former Leader rejoins, it automatically becomes a Follower if a valid Leader already exists.
 
-### 📌 Notes
+### 💾 Blockchain Storage
+- Each node stores blockchain data locally using LevelDB in ./blockdata/<node-id>.
+- The genesis block is only created if the database is empty.
+- On startup, if the chain is outdated, the node auto-syncs from peers.
+
+### ⚙️ Configuration
+| ENV Variable | Description                                    |
+| ------------ | ---------------------------------------------- |
+| `NODE_ID`    | Unique identifier for the node (e.g., `node1`) |
+| `PORT`       | gRPC listening port                            |
+| `PEERS`      | Comma-separated list of peer addresses         |
+| `DB_PATH`    | Directory for storing blockchain data          |
+
+### 📌 Key Behavior
+- Leader is dynamically elected — no need for IS_LEADER flag.
+- Election only runs if no valid Leader exists.
 - Only the Leader can accept new transactions.
-- All nodes store their own LevelDB data locally (/app/data) and operate independently.
-- The Genesis Block is created only if the local database is empty.
-- Node roles are assigned via environment variables (IS_LEADER=true|false).
-- There is no automatic leader election—the leader is statically assigned.
+- Re-election is triggered when the Leader goes down.
+- Nodes recover and sync state automatically after downtime.
 
 ### 📚 Learnings & Key Concepts
-- How to implement a basic consensus protocol using voting and block proposals
-- Creating and verifying digital signatures with ECDSA
-- Generating wallet addresses from public keys
-- Building a Merkle root to secure transaction data
-- Inter-node communication with gRPC
-- Container orchestration with Docker Compose
+- Implementing a basic Leader-Follower consensus system.
+- Using ECDSA for digital signatures and wallet generation.
+- Building and verifying Merkle roots for block data integrity.
+- Handling inter-node communication via gRPC.
+- Orchestrating multiple blockchain nodes with Docker Compose.
