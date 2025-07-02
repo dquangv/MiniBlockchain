@@ -76,4 +76,5 @@ message PriorityRequest {
 
 message PriorityResponse {
   string leaderId = 1;
+  bool acknowledged = 2;
 }
