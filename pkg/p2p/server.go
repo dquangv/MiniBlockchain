@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	"golang-chain/pkg/blockchain"
@@ -31,6 +32,7 @@ type NodeServer struct {
 	Priority   int
 	LeaderID   string
 	Priorities map[string]int // 🆕 lưu priority của các node khác
+	Mutex      sync.Mutex
 }
 
 func (s *NodeServer) SendTransaction(ctx context.Context, tx *pb.Transaction) (*pb.TxResponse, error) {
@@ -282,21 +284,21 @@ func (s *NodeServer) GetBalance(ctx context.Context, req *pb.BalanceRequest) (*p
 
 var priorityMap = make(map[string]int)
 
+// ExchangePriority: dùng mutex và log kỹ càng
 func (s *NodeServer) ExchangePriority(ctx context.Context, req *pb.PriorityRequest) (*pb.PriorityResponse, error) {
-	// Lưu priority lại
+	s.Mutex.Lock()
+	defer s.Mutex.Unlock()
+
+	if s.Priorities == nil {
+		s.Priorities = make(map[string]int)
+	}
 	s.Priorities[req.NodeId] = int(req.Priority)
 	log.Printf("🤝 Received priority %d from %s", req.Priority, req.NodeId)
-
-	// Nếu mình không phải leader thì cập nhật leaderID theo bên gửi (có thể đã bầu xong)
-	if *s.State != StateLeader {
-		s.LeaderID = req.NodeId
-		CurrentLeader = peerAddressByID(req.NodeId, peersFromEnv()) // <- bạn cần viết hàm này
-		*s.State = StateFollower
-	}
+	log.Printf("📥 All priorities received so far: %+v", s.Priorities)
 
 	return &pb.PriorityResponse{
-		LeaderId:     s.LeaderID,
 		Acknowledged: true,
+		LeaderId:     s.LeaderID,
 	}, nil
 }
 
