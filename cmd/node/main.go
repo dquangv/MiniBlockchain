@@ -58,22 +58,30 @@ func main() {
 	} else {
 		log.Println("⚠️ No peers found to sync from.")
 	}
-
 	state = p2p.StateFollower
-	// log.Println("🔁 Sync complete. Now acting as Follower.")
 
-	// ✅ Tạo server instance (quan trọng để giữ priority & state)
+	// ✅ Tạo NodeServer instance
 	server := p2p.NewNodeServer(port, dbPath, nodeID, db, &state)
 
-	// 🚀 Start gRPC server
+	// 🚀 Khởi động gRPC server
 	go server.StartGRPC()
 
-	// Bắt đầu monitor leader
+	// ⏱️ Đợi gRPC ổn định
+	time.Sleep(2 * time.Second)
+
+	// 🧠 Kiểm tra xem có leader nào đang online không
+	if has, leaderAddr := p2p.HasLeader(peers); has {
+		log.Printf("✅ Detected existing leader: %s. Joining as follower.", leaderAddr)
+		server.LeaderID = p2p.ExtractNodeID(leaderAddr)
+		p2p.CurrentLeader = leaderAddr
+		*server.State = p2p.StateFollower
+	} else {
+		log.Println("🗳️ No leader detected. Starting election...")
+		p2p.StartElection(server, peers)
+	}
+
+	// 🕵️ Theo dõi leader
 	p2p.MonitorLeader(server, peers)
 
-	// 🗳️ Bắt đầu bầu cử sau khi server sẵn sàng
-	time.Sleep(2 * time.Second)
-	p2p.StartElection(server, peers)
-
-	select {} // giữ cho chương trình chạy hoài
+	select {} // giữ chương trình chạy hoài
 }
